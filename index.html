@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Elite CRM - Gestion de Clients</title>
+    <!-- Lucide Icons -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        :root {
+            /* Palette de couleurs Mode Jour */
+            --bg-global: #ffffff;
+            --nav-bg: #1a237e; /* Bleu Nuit */
+            --nav-text: #ffffff;
+            --active-bg: #ff4500; /* Rouge Orangé */
+            --active-text: #ffffff;
+            --btn-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
+            --card-bg: #f8fafc;
+            --text-main: #1e293b;
+            --border-color: #e2e8f0;
+            --status-subscriber: #10b981; /* Vert */
+            --status-occasional: #ff4500; /* Rouge Orangé */
+            --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        [data-theme="dark"] {
+            /* Palette de couleurs Mode Nuit */
+            --bg-global: #0f172a;
+            --nav-bg: #020617;
+            --card-bg: #1e293b;
+            --text-main: #f1f5f9;
+            --border-color: #334155;
+            --btn-gradient: linear-gradient(135deg, #fb923c, #f97316); /* Orange clair pour boutons */
+            --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-global);
+            color: var(--text-main);
+            transition: var(--transition);
+            min-height: 100vh;
+        }
+
+        /* --- NAVIGATION --- */
+        nav {
+            background-color: var(--nav-bg);
+            padding: 0 2rem;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 10px;
+            height: 100%;
+            align-items: center;
+        }
+
+        .nav-item {
+            padding: 10px 20px;
+            border-radius: 8px;
+            color: var(--nav-text);
+            text-decoration: none;
+            font-weight: 600;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .nav-item.active {
+            background-color: var(--active-bg);
+            color: var(--active-text);
+            transform: translateY(-2px);
+        }
+
+        .theme-toggle {
+            background: rgba(255,255,255,0.1);
+            border: none;
+            color: white;
+            padding: 10px;
+            border-radius: 50%;
+            cursor: pointer;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            background: rgba(255,255,255,0.2);
+            transform: rotate(20deg);
+        }
+
+        /* --- CONTENT CONTAINER --- */
+        .container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* --- HEADER ACTIONS --- */
+        .action-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .search-wrapper {
+            position: relative;
+            flex: 1;
+            max-width: 400px;
+        }
+
+        .search-wrapper input {
+            width: 100%;
+            padding: 12px 20px 12px 45px;
+            border-radius: 30px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            outline: none;
+            transition: var(--transition);
+        }
+
+        .search-wrapper input:focus {
+            border-color: var(--active-bg);
+            box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.2);
+        }
+
+        .search-icon {
+            position: absolute;
+            left: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #94a3b8;
+        }
+
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 12px 24px;
+            border-radius: 12px;
+            border: none;
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            background: var(--btn-gradient);
+            transition: var(--transition);
+            box-shadow: var(--shadow);
+        }
+
+        .btn:hover {
+            transform: scale(1.05);
+            filter: brightness(1.1);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+        }
+
+        /* --- CLIENT GRID --- */
+        .client-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .client-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            padding: 1.5rem;
+            transition: var(--transition);
+            position: relative;
+            overflow: hidden;
+            cursor: pointer;
+        }
+
+        .client-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow);
+            border-color: var(--active-bg);
+        }
+
+        .client-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+
+        .client-code {
+            font-size: 0.8rem;
+            color: #64748b;
+            font-weight: bold;
+        }
+
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            color: white;
+            text-transform: uppercase;
+        }
+
+        .status-subscriber { background-color: var(--status-subscriber); }
+        .status-occasional { background-color: var(--status-occasional); }
+
+        .client-name {
+            font-size: 1.25rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .client-info {
+            display: grid;
+            gap: 8px;
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        .info-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            padding: 1rem;
+        }
+
+        .modal-content {
+            background: var(--bg-global);
+            width: 100%;
+            max-width: 600px;
+            border-radius: 24px;
+            padding: 2rem;
+            position: relative;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+        }
+
+        .modal-header {
+            margin-bottom: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1rem;
+        }
+
+        .form-group {
+            margin-bottom: 1rem;
+        }
+
+        .form-group.full { grid-column: span 2; }
+
+        label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.85rem;
+            font-weight: 600;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background: var(--card-bg);
+            color: var(--text-main);
+            transition: var(--transition);
+        }
+
+        input:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            background: #e2e8f0;
+        }
+
+        /* --- PERFORMANCE PANEL --- */
+        .performance-panel {
+            margin-top: 1.5rem;
+            padding-top: 1.5rem;
+            border-top: 1px dashed var(--border-color);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .stat-box {
+            background: rgba(59, 130, 246, 0.1);
+            padding: 10px;
+            border-radius: 12px;
+            text-align: center;
+        }
+
+        .stat-val {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--active-bg);
+        }
+
+        /* --- TOAST --- */
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #10b981;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 10px;
+            box-shadow: var(--shadow);
+            transform: translateY(100px);
+            transition: var(--transition);
+            z-index: 3000;
+        }
+
+        .toast.error {
+            background: #ef4444;
+        }
+
+        .toast.show { transform: translateY(0); }
+
+    </style>
+</head>
+<body>
+
+    <nav>
+        <div class="nav-links">
+            <div class="nav-item active" onclick="switchTab('CLIENT')">
+                <i data-lucide="users"></i> CLIENT
+            </div>
+            <div class="nav-item" onclick="switchTab('VENTES')">
+                <i data-lucide="shopping-cart"></i> VENTES
+            </div>
+            <div class="nav-item" onclick="switchTab('STOCK')">
+                <i data-lucide="package"></i> STOCK
+            </div>
+        </div>
+        <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
+            <i data-lucide="moon"></i>
+        </button>
+    </nav>
+
+    <div class="container" id="main-content">
+        <div class="action-bar">
+            <div class="search-wrapper">
+                <i data-lucide="search" class="search-icon"></i>
+                <input type="text" id="searchInput" placeholder="Rechercher (Nom, Code, Contact)..." oninput="filterClients()">
+            </div>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn" onclick="exportToCSV()">
+                    <i data-lucide="file-text"></i> Exporter CSV
+                </button>
+                <button class="btn" onclick="openAddModal()">
+                    <i data-lucide="user-plus"></i> Nouveau Client
+                </button>
+            </div>
+        </div>
+
+        <div class="client-grid" id="clientGrid">
+            <!-- Injecté par JS -->
+        </div>
+    </div>
+
+    <!-- Modal Ajouter / Modifier Client -->
+    <div class="modal-overlay" id="addClientModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="modalTitle">Nouveau Client</h2>
+                <button onclick="closeModal('addClientModal')" style="background:none; border:none; cursor:pointer;">
+                    <i data-lucide="x"></i>
+                </button>
+            </div>
+            <form id="clientForm" onsubmit="handleFormSubmit(event)">
+                <input type="hidden" id="editClientId">
+                <div class="form-grid">
+                    <div class="form-group full">
+                        <label>Nom Complet *</label>
+                        <input type="text" id="name" required placeholder="Ex: Jean Dupont">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Principal *</label>
+                        <input type="tel" id="phone1" required placeholder="01 02 03 04 05">
+                    </div>
+                    <div class="form-group">
+                        <label>Contact Secondaire</label>
+                        <input type="tel" id="phone2" placeholder="Optionnel">
+                    </div>
+                    <div class="form-group full">
+                        <label>Adresse Géographique *</label>
+                        <input type="text" id="address" required placeholder="Ville, Quartier, Rue">
+                    </div>
+                    <div class="form-group">
+                        <label>Statut *</label>
+                        <select id="status" required onchange="handleStatusChange()">
+                            <option value="Occasionnel">Occasionnel</option>
+                            <option value="Abonné">Abonné</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label id="limitLabel">Plafond Financier (FCFA)</label>
+                        <input type="number" id="limit" placeholder="Réservé aux abonnés" disabled>
+                    </div>
+                    <div class="form-group full">
+                        <label>Adresse Mail</label>
+                        <input type="email" id="email" placeholder="client@exemple.com">
+                    </div>
+                </div>
+                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 10px;">
+                    <button type="button" class="btn" style="background: #94a3b8;" onclick="closeModal('addClientModal')">Annuler</button>
+                    <button type="submit" class="btn">Enregistrer</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Détails Client -->
+    <div class="modal-overlay" id="detailModal">
+        <div class="modal-content" id="detailContent">
+            <!-- Injecté par JS -->
+        </div>
+    </div>
+
+    <!-- Modal de Confirmation de Suppression -->
+    <div class="modal-overlay" id="deleteConfirmModal">
+        <div class="modal-content" style="max-width: 400px; text-align: center;">
+            <div class="modal-header" style="justify-content: center;">
+                <h2 style="color: #ef4444;">Supprimer le client ?</h2>
+            </div>
+            <p style="margin-bottom: 1.5rem;">Saisissez le code administrateur pour confirmer la suppression définitive.</p>
+            <input type="password" id="adminCode" placeholder="Code Administrateur" style="margin-bottom: 1.5rem; text-align: center;">
+            <input type="hidden" id="deleteClientId">
+            <div style="display: flex; gap: 10px; justify-content: center;">
+                <button class="btn" style="background: #94a3b8;" onclick="closeModal('deleteConfirmModal')">Annuler</button>
+                <button class="btn btn-danger" onclick="confirmDelete()">Confirmer</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast">Opération réussie !</div>
+
+    <script>
+        // --- DATA STATE ---
+        let clients = JSON.parse(localStorage.getItem('clients_db_v2')) || [
+            {
+                id: "CL-001",
+                name: "Kouadio Konan",
+                phone1: "+225 07070707",
+                phone2: "",
+                address: "Abidjan, Cocody",
+                limit: 1000000,
+                status: "Abonné",
+                email: "konan@mail.com",
+                date: "2023-10-25",
+                purchases: 15,
+                totalSpent: 450000
+            },
+            {
+                id: "CL-002",
+                name: "Marie Traoré",
+                phone1: "+225 05050505",
+                phone2: "01010101",
+                address: "Bouaké, Commerce",
+                limit: 0,
+                status: "Occasionnel",
+                email: "marie.t@mail.com",
+                date: "2023-11-02",
+                purchases: 3,
+                totalSpent: 85000
+            }
+        ];
+
+        // --- THEME MANAGEMENT ---
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('theme-btn');
+            if (body.getAttribute('data-theme') === 'dark') {
+                body.removeAttribute('data-theme');
+                btn.innerHTML = '<i data-lucide="moon"></i>';
+            } else {
+                body.setAttribute('data-theme', 'dark');
+                btn.innerHTML = '<i data-lucide="sun"></i>';
+            }
+            lucide.createIcons();
+        }
+
+        // --- FORM LOGIC ---
+        function handleStatusChange() {
+            const status = document.getElementById('status').value;
+            const limitInput = document.getElementById('limit');
+            if (status === 'Abonné') {
+                limitInput.disabled = false;
+                limitInput.placeholder = "Ex: 500000";
+                limitInput.required = true;
+            } else {
+                limitInput.disabled = true;
+                limitInput.placeholder = "Réservé aux abonnés";
+                limitInput.required = false;
+                limitInput.value = "";
+            }
+        }
+
+        // --- RENDER CLIENTS ---
+        function renderClients(data = clients) {
+            const grid = document.getElementById('clientGrid');
+            if (data.length === 0) {
+                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 3rem; color:#64748b;">Aucun client trouvé.</div>`;
+                return;
+            }
+            grid.innerHTML = data.map(client => `
+                <div class="client-card" onclick="viewDetails('${client.id}')">
+                    <div class="client-header">
+                        <span class="client-code">${client.id}</span>
+                        <span class="status-badge ${client.status === 'Abonné' ? 'status-subscriber' : 'status-occasional'}">
+                            ${client.status}
+                        </span>
+                    </div>
+                    <h3 class="client-name">${client.name}</h3>
+                    <div class="client-info">
+                        <div class="info-item"><i data-lucide="phone" size="14"></i> ${client.phone1}</div>
+                        <div class="info-item"><i data-lucide="map-pin" size="14"></i> ${client.address}</div>
+                        <div class="info-item"><i data-lucide="calendar" size="14"></i> Ajouté le ${new Date(client.date).toLocaleDateString()}</div>
+                    </div>
+                </div>
+            `).join('');
+            lucide.createIcons();
+        }
+
+        // --- SEARCH/FILTER ---
+        function filterClients() {
+            const val = document.getElementById('searchInput').value.toLowerCase();
+            const filtered = clients.filter(c => 
+                c.name.toLowerCase().includes(val) || 
+                c.id.toLowerCase().includes(val) || 
+                c.phone1.includes(val)
+            );
+            renderClients(filtered);
+        }
+
+        // --- MODAL HELPERS ---
+        function openModal(id) {
+            document.getElementById(id).style.display = 'flex';
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).style.display = 'none';
+        }
+
+        function openAddModal() {
+            document.getElementById('modalTitle').textContent = "Nouveau Client";
+            document.getElementById('clientForm').reset();
+            document.getElementById('editClientId').value = "";
+            handleStatusChange();
+            openModal('addClientModal');
+        }
+
+        // --- FORM SUBMISSION (ADD OR EDIT) ---
+        function handleFormSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editClientId').value;
+            
+            const name = document.getElementById('name').value.trim();
+            const phone1 = document.getElementById('phone1').value.trim();
+            const phone2 = document.getElementById('phone2').value.trim();
+            const address = document.getElementById('address').value.trim();
+            const limit = document.getElementById('limit').value || 0;
+            const status = document.getElementById('status').value;
+            const email = document.getElementById('email').value.trim().toLowerCase();
+
+            // --- VÉRIFICATION DES DOUBLONS ---
+            const otherClients = editId ? clients.filter(c => c.id !== editId) : clients;
+
+            const isDuplicateName = otherClients.some(c => c.name.toLowerCase() === name.toLowerCase());
+            const isDuplicateEmail = email && otherClients.some(c => c.email && c.email.toLowerCase() === email);
+            
+            // Vérification croisée des téléphones
+            const isDuplicatePhone = otherClients.some(c => 
+                c.phone1 === phone1 || 
+                (phone2 && c.phone1 === phone2) ||
+                (c.phone2 && c.phone2 === phone1) ||
+                (phone2 && c.phone2 && c.phone2 === phone2)
+            );
+
+            if (isDuplicateName) {
+                showToast("Erreur : Ce nom existe déjà !", true);
+                return;
+            }
+            if (isDuplicatePhone) {
+                showToast("Erreur : Ce numéro de contact est déjà utilisé !", true);
+                return;
+            }
+            if (isDuplicateEmail) {
+                showToast("Erreur : Cette adresse mail existe déjà !", true);
+                return;
+            }
+
+            const formData = { name, phone1, phone2, address, limit, status, email };
+
+            if (editId) {
+                // Mode Edition
+                const index = clients.findIndex(c => c.id === editId);
+                clients[index] = { ...clients[index], ...formData };
+                showToast("Informations mises à jour !");
+            } else {
+                // Mode Ajout
+                const nextNum = clients.length > 0 ? Math.max(...clients.map(c => parseInt(c.id.split('-')[1]))) + 1 : 1;
+                const newId = `CL-${String(nextNum).padStart(3, '0')}`;
+                
+                const newClient = {
+                    id: newId,
+                    ...formData,
+                    date: new Date().toISOString().split('T')[0],
+                    purchases: 0,
+                    totalSpent: 0
+                };
+                clients.push(newClient);
+                showToast("Nouveau client ajouté !");
+            }
+
+            localStorage.setItem('clients_db_v2', JSON.stringify(clients));
+            renderClients();
+            closeModal('addClientModal');
+            document.getElementById('clientForm').reset();
+            document.getElementById('editClientId').value = "";
+            handleStatusChange();
+        }
+
+        // --- VIEW DETAILS ---
+        function viewDetails(id) {
+            const client = clients.find(c => c.id === id);
+            const content = document.getElementById('detailContent');
+            
+            content.innerHTML = `
+                <div class="modal-header">
+                    <h2>Fiche Client : ${client.name}</h2>
+                    <button onclick="closeModal('detailModal')" style="background:none; border:none; cursor:pointer;">
+                        <i data-lucide="x"></i>
+                    </button>
+                </div>
+                <div class="client-info" style="font-size: 1rem; gap: 15px;">
+                    <div class="info-item"><i data-lucide="hash"></i> <strong>Code:</strong> ${client.id}</div>
+                    <div class="info-item"><i data-lucide="phone"></i> <strong>Contacts:</strong> ${client.phone1} ${client.phone2 ? '/ ' + client.phone2 : ''}</div>
+                    <div class="info-item"><i data-lucide="mail"></i> <strong>Email:</strong> ${client.email || 'N/A'}</div>
+                    <div class="info-item"><i data-lucide="map-pin"></i> <strong>Adresse:</strong> ${client.address}</div>
+                    <div class="info-item"><i data-lucide="credit-card"></i> <strong>Plafond:</strong> ${client.status === 'Abonné' ? Number(client.limit).toLocaleString() + ' FCFA' : 'Aucun (Client Occasionnel)'}</div>
+                </div>
+
+                <div class="performance-panel">
+                    <h3 style="margin-bottom: 1rem;"><i data-lucide="trending-up"></i> Performances</h3>
+                    <div class="stat-grid">
+                        <div class="stat-box">
+                            <span class="stat-val">${client.purchases}</span>
+                            <small>Commandes</small>
+                        </div>
+                        <div class="stat-box">
+                            <span class="stat-val">${Number(client.totalSpent).toLocaleString()}</span>
+                            <small>Total CA (FCFA)</small>
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top: 2rem; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button class="btn" style="background: #1e293b;" onclick="prepareEdit('${client.id}')">
+                        <i data-lucide="edit"></i> Modifier
+                    </button>
+                    <button class="btn btn-danger" onclick="prepareDelete('${client.id}')">
+                        <i data-lucide="trash-2"></i> Supprimer
+                    </button>
+                </div>
+            `;
+            openModal('detailModal');
+            lucide.createIcons();
+        }
+
+        // --- PREPARE EDIT ---
+        function prepareEdit(id) {
+            const client = clients.find(c => c.id === id);
+            document.getElementById('modalTitle').textContent = "Modifier le Client";
+            document.getElementById('editClientId').value = client.id;
+            document.getElementById('name').value = client.name;
+            document.getElementById('phone1').value = client.phone1;
+            document.getElementById('phone2').value = client.phone2;
+            document.getElementById('address').value = client.address;
+            document.getElementById('status').value = client.status;
+            document.getElementById('limit').value = client.limit;
+            document.getElementById('email').value = client.email;
+            
+            handleStatusChange();
+            closeModal('detailModal');
+            openModal('addClientModal');
+        }
+
+        // --- DELETE LOGIC ---
+        function prepareDelete(id) {
+            document.getElementById('deleteClientId').value = id;
+            document.getElementById('adminCode').value = "";
+            openModal('deleteConfirmModal');
+        }
+
+        function confirmDelete() {
+            const id = document.getElementById('deleteClientId').value;
+            const code = document.getElementById('adminCode').value;
+
+            if (code === "ICONIC") {
+                clients = clients.filter(c => c.id !== id);
+                localStorage.setItem('clients_db_v2', JSON.stringify(clients));
+                renderClients();
+                closeModal('deleteConfirmModal');
+                closeModal('detailModal');
+                showToast("Client supprimé avec succès !");
+            } else {
+                showToast("Code Administrateur Incorrect !", true);
+                document.getElementById('adminCode').style.borderColor = "#ef4444";
+            }
+        }
+
+        // --- EXPORT CSV ---
+        function exportToCSV() {
+            if (clients.length === 0) {
+                showToast("Aucun client à exporter", true);
+                return;
+            }
+
+            const headers = ["ID", "Nom", "Contact1", "Contact2", "Adresse", "Email", "Statut", "Plafond", "Date_Ajout"];
+            const rows = clients.map(c => [
+                c.id,
+                c.name,
+                c.phone1,
+                c.phone2,
+                c.address,
+                c.email,
+                c.status,
+                c.limit,
+                c.date
+            ]);
+
+            const csvContent = [
+                headers.join(";"),
+                ...rows.map(r => r.join(";"))
+            ].join("\n");
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.setAttribute("href", url);
+            link.setAttribute("download", `base_clients_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            showToast("Exportation CSV réussie !");
+        }
+
+        function showToast(msg, isError = false) {
+            const t = document.getElementById('toast');
+            t.textContent = msg;
+            if (isError) t.classList.add('error');
+            else t.classList.remove('error');
+            
+            t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
+
+        function switchTab(tab) {
+            if(tab !== 'CLIENT') {
+                document.getElementById('main-content').innerHTML = `
+                    <div style="text-align:center; padding: 100px; opacity:0.5;">
+                        <i data-lucide="construction" size="64"></i>
+                        <h2>Module ${tab}</h2>
+                        <p>En cours de développement.</p>
+                        <button class="btn" style="margin-top:20px" onclick="location.reload()">Retour au CRM</button>
+                    </div>
+                `;
+                lucide.createIcons();
+            }
+        }
+
+        // --- INITIALIZE ---
+        window.onload = () => {
+            renderClients();
+            lucide.createIcons();
+        };
+
+    </script>
+</body>
+</html>

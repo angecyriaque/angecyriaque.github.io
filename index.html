@@ -1,46 +1,40 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="fr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite CRM - Gestion de Clients</title>
+    <title>Elite CRM - Business Management</title>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
         :root {
-            /* Palette de couleurs Mode Jour */
             --bg-global: #ffffff;
-            --nav-bg: #1a237e; /* Bleu Nuit */
+            --nav-bg: #1a237e;
             --nav-text: #ffffff;
-            --active-bg: #ff4500; /* Rouge Orangé */
+            --active-bg: #ff4500;
             --active-text: #ffffff;
             --btn-gradient: linear-gradient(135deg, #1e3a8a, #3b82f6);
             --card-bg: #f8fafc;
             --text-main: #1e293b;
             --border-color: #e2e8f0;
-            --status-subscriber: #10b981; /* Vert */
-            --status-occasional: #ff4500; /* Rouge Orangé */
+            --status-subscriber: #10b981;
+            --status-occasional: #ff4500;
+            --status-out-of-stock: #f97316;
             --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
-            --transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         }
 
         [data-theme="dark"] {
-            /* Palette de couleurs Mode Nuit */
             --bg-global: #0f172a;
             --nav-bg: #020617;
             --card-bg: #1e293b;
             --text-main: #f1f5f9;
             --border-color: #334155;
-            --btn-gradient: linear-gradient(135deg, #fb923c, #f97316); /* Orange clair pour boutons */
+            --btn-gradient: linear-gradient(135deg, #fb923c, #f97316);
             --shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
         }
 
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-            font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', system-ui, sans-serif; }
 
         body {
             background-color: var(--bg-global);
@@ -63,12 +57,7 @@
             box-shadow: 0 4px 6px -1px rgba(0,0,0,0.1);
         }
 
-        .nav-links {
-            display: flex;
-            gap: 10px;
-            height: 100%;
-            align-items: center;
-        }
+        .nav-links { display: flex; gap: 10px; height: 100%; align-items: center; }
 
         .nav-item {
             padding: 10px 20px;
@@ -81,13 +70,10 @@
             align-items: center;
             gap: 8px;
             cursor: pointer;
+            opacity: 0.7;
         }
 
-        .nav-item.active {
-            background-color: var(--active-bg);
-            color: var(--active-text);
-            transform: translateY(-2px);
-        }
+        .nav-item.active { background-color: var(--active-bg); color: var(--active-text); transform: translateY(-2px); opacity: 1; }
 
         .theme-toggle {
             background: rgba(255,255,255,0.1);
@@ -99,283 +85,120 @@
             transition: var(--transition);
         }
 
-        .theme-toggle:hover {
-            background: rgba(255,255,255,0.2);
-            transform: rotate(20deg);
-        }
+        /* --- LAYOUT --- */
+        .container { max-width: 1200px; margin: 2rem auto; padding: 0 1rem; animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- CONTENT CONTAINER --- */
-        .container {
-            max-width: 1200px;
-            margin: 2rem auto;
-            padding: 0 1rem;
-            animation: fadeIn 0.6s ease-out;
-        }
+        .action-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem; flex-wrap: wrap; gap: 1rem; }
 
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        /* --- HEADER ACTIONS --- */
-        .action-bar {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 2rem;
-            flex-wrap: wrap;
-            gap: 1rem;
-        }
-
-        .search-wrapper {
-            position: relative;
-            flex: 1;
-            max-width: 400px;
-        }
-
+        .search-wrapper { position: relative; flex: 1; max-width: 400px; }
         .search-wrapper input {
-            width: 100%;
-            padding: 12px 20px 12px 45px;
-            border-radius: 30px;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: var(--text-main);
-            outline: none;
-            transition: var(--transition);
+            width: 100%; padding: 12px 20px 12px 45px; border-radius: 30px;
+            border: 1px solid var(--border-color); background: var(--card-bg);
+            color: var(--text-main); outline: none; transition: var(--transition);
         }
-
-        .search-wrapper input:focus {
-            border-color: var(--active-bg);
-            box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.2);
-        }
-
-        .search-icon {
-            position: absolute;
-            left: 15px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-        }
+        .search-wrapper input:focus { border-color: var(--active-bg); box-shadow: 0 0 0 3px rgba(255, 69, 0, 0.2); }
+        .search-icon { position: absolute; left: 15px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
 
         .btn {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            padding: 12px 24px;
-            border-radius: 12px;
-            border: none;
-            color: white;
-            font-weight: 600;
-            cursor: pointer;
-            background: var(--btn-gradient);
-            transition: var(--transition);
-            box-shadow: var(--shadow);
+            display: inline-flex; align-items: center; gap: 8px; padding: 10px 20px;
+            border-radius: 10px; border: none; color: white; font-weight: 600;
+            cursor: pointer; background: var(--btn-gradient); transition: var(--transition);
+        }
+        .btn:hover { transform: scale(1.03); filter: brightness(1.1); }
+        .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); }
+        .btn-accent { background: var(--active-bg); }
+
+        /* --- GRID & CARDS --- */
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
+        .grid-articles { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+
+        .card {
+            background: var(--card-bg); border: 1px solid var(--border-color);
+            border-radius: 20px; padding: 1.5rem; transition: var(--transition);
+            cursor: pointer; position: relative; display: flex; flex-direction: column;
+        }
+        .card:hover { transform: translateY(-5px); border-color: var(--active-bg); box-shadow: var(--shadow); }
+
+        /* Tables */
+        table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
+        th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); color: #64748b; font-weight: 600; }
+        td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
+
+        .article-img-container {
+            width: 100%; height: 120px; background: #e2e8f0; border-radius: 12px;
+            margin-bottom: 10px; overflow: hidden; display: flex; align-items: center;
+            justify-content: center; position: relative;
+        }
+        .article-img-container img { width: 100%; height: 100%; object-fit: cover; }
+
+        .rupture-overlay {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); display: flex; align-items: center; justify-content: center; z-index: 10;
+        }
+        .rupture-text {
+            color: #ffffff; font-weight: 900; font-size: 1.2rem; letter-spacing: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5); border: 2px solid #ffffff; padding: 4px 12px; transform: rotate(-15deg);
         }
 
-        .btn:hover {
-            transform: scale(1.05);
-            filter: brightness(1.1);
-        }
-
-        .btn-danger {
-            background: linear-gradient(135deg, #ef4444, #b91c1c);
-        }
-
-        /* --- CLIENT GRID --- */
-        .client-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
-            gap: 1.5rem;
-        }
-
-        .client-card {
-            background: var(--card-bg);
-            border: 1px solid var(--border-color);
-            border-radius: 20px;
-            padding: 1.5rem;
-            transition: var(--transition);
-            position: relative;
-            overflow: hidden;
-            cursor: pointer;
-        }
-
-        .client-card:hover {
-            transform: translateY(-5px);
-            box-shadow: var(--shadow);
-            border-color: var(--active-bg);
-        }
-
-        .client-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 1rem;
-        }
-
-        .client-code {
-            font-size: 0.8rem;
-            color: #64748b;
-            font-weight: bold;
-        }
-
-        .status-badge {
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75rem;
-            font-weight: bold;
-            color: white;
-            text-transform: uppercase;
-        }
-
+        .status-badge { padding: 4px 10px; border-radius: 20px; font-size: 0.7rem; font-weight: bold; color: white; }
         .status-subscriber { background-color: var(--status-subscriber); }
         .status-occasional { background-color: var(--status-occasional); }
+        .status-rupture { background-color: var(--status-out-of-stock); }
+        .status-paid { background-color: #dcfce7; color: #16a34a; }
+        .status-unpaid { background-color: #fee2e2; color: #dc2626; }
 
-        .client-name {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 0.5rem;
-        }
-
-        .client-info {
-            display: grid;
-            gap: 8px;
-            font-size: 0.9rem;
-            color: #64748b;
-        }
-
-        .info-item {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
+        .card-code { font-size: 0.75rem; color: #64748b; font-weight: 800; }
+        .card-name { font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0; }
+        .card-info { font-size: 0.85rem; color: #64748b; display: grid; gap: 5px; }
 
         /* --- MODAL --- */
         .modal-overlay {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.5);
-            backdrop-filter: blur(5px);
-            display: none;
-            justify-content: center;
-            align-items: center;
-            z-index: 2000;
-            padding: 1rem;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px);
+            display: none; justify-content: center; align-items: center; z-index: 2000;
         }
-
+        .modal-overlay.active { display: flex; }
         .modal-content {
-            background: var(--bg-global);
-            width: 100%;
-            max-width: 600px;
-            border-radius: 24px;
-            padding: 2rem;
-            position: relative;
-            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            background: var(--bg-global); width: 95%; max-width: 650px;
+            border-radius: 20px; padding: 2rem; max-height: 90vh; overflow-y: auto;
         }
-
-        .modal-header {
-            margin-bottom: 1.5rem;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
+        .modal-lg { max-width: 1000px; }
+        .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+        .full { grid-column: span 2; }
+        label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 5px; }
+        input, select, textarea {
+            width: 100%; padding: 10px; border-radius: 8px;
+            border: 1px solid var(--border-color); background: var(--card-bg); color: var(--text-main);
         }
+        input:read-only { background-color: #f1f5f9; cursor: not-allowed; }
 
-        .form-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1rem;
-        }
-
-        .form-group {
-            margin-bottom: 1rem;
-        }
-
-        .form-group.full { grid-column: span 2; }
-
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 0.85rem;
-            font-weight: 600;
-        }
-
-        input, select {
-            width: 100%;
-            padding: 10px;
-            border-radius: 8px;
-            border: 1px solid var(--border-color);
-            background: var(--card-bg);
-            color: var(--text-main);
-            transition: var(--transition);
-        }
-
-        input:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            background: #e2e8f0;
-        }
-
-        /* --- PERFORMANCE PANEL --- */
-        .performance-panel {
-            margin-top: 1.5rem;
-            padding-top: 1.5rem;
-            border-top: 1px dashed var(--border-color);
-        }
-
-        .stat-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
-        }
-
-        .stat-box {
-            background: rgba(59, 130, 246, 0.1);
-            padding: 10px;
-            border-radius: 12px;
-            text-align: center;
-        }
-
-        .stat-val {
-            display: block;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: var(--active-bg);
-        }
+        .list-manager { background: #f1f5f9; padding: 10px; border-radius: 8px; margin-top: 5px; display: flex; gap: 5px; }
 
         /* --- TOAST --- */
-        .toast {
-            position: fixed;
-            bottom: 20px;
-            right: 20px;
-            background: #10b981;
-            color: white;
-            padding: 12px 24px;
-            border-radius: 10px;
-            box-shadow: var(--shadow);
-            transform: translateY(100px);
-            transition: var(--transition);
-            z-index: 3000;
+        #toast {
+            position: fixed; bottom: 20px; right: 20px; padding: 12px 24px;
+            border-radius: 10px; color: white; transform: translateY(100px);
+            transition: 0.3s; z-index: 3000; font-weight: 600;
         }
-
-        .toast.error {
-            background: #ef4444;
-        }
-
-        .toast.show { transform: translateY(0); }
-
+        #toast.show { transform: translateY(0); }
     </style>
 </head>
 <body>
 
     <nav>
         <div class="nav-links">
-            <div class="nav-item active" onclick="switchTab('CLIENT')">
-                <i data-lucide="users"></i> CLIENT
+            <div class="nav-item active" id="tab-CLIENT" onclick="switchView('CLIENT')">
+                <i data-lucide="users"></i> CLIENTS
             </div>
-            <div class="nav-item" onclick="switchTab('VENTES')">
+            <div class="nav-item" id="tab-FOURNISSEUR" onclick="switchView('FOURNISSEUR')">
+                <i data-lucide="truck"></i> FOURNISSEURS
+            </div>
+            <div class="nav-item" id="tab-ARTICLE" onclick="switchView('ARTICLE')">
+                <i data-lucide="package"></i> ARTICLES
+            </div>
+            <div class="nav-item" id="tab-VENTE" onclick="switchView('VENTE')">
                 <i data-lucide="shopping-cart"></i> VENTES
-            </div>
-            <div class="nav-item" onclick="switchTab('STOCK')">
-                <i data-lucide="package"></i> STOCK
             </div>
         </div>
         <button class="theme-toggle" onclick="toggleTheme()" id="theme-btn">
@@ -383,445 +206,580 @@
         </button>
     </nav>
 
-    <div class="container" id="main-content">
-        <div class="action-bar">
+    <div class="container">
+        <div class="action-bar" id="action-bar-container">
             <div class="search-wrapper">
                 <i data-lucide="search" class="search-icon"></i>
-                <input type="text" id="searchInput" placeholder="Rechercher (Nom, Code, Contact)..." oninput="filterClients()">
+                <input type="text" id="searchInput" placeholder="Rechercher..." oninput="filterData()">
             </div>
-            <div style="display: flex; gap: 10px;">
-                <button class="btn" onclick="exportToCSV()">
-                    <i data-lucide="file-text"></i> Exporter CSV
+            <div id="dynamic-buttons" style="display: flex; gap: 10px;">
+                <button class="btn" onclick="exportData()">
+                    <i data-lucide="download"></i> Exporter CSV
                 </button>
-                <button class="btn" onclick="openAddModal()">
-                    <i data-lucide="user-plus"></i> Nouveau Client
+                <button class="btn" onclick="openAddForm()">
+                    <i data-lucide="plus-circle"></i> Nouveau <span id="btn-label">Client</span>
                 </button>
             </div>
         </div>
 
-        <div class="client-grid" id="clientGrid">
-            <!-- Injecté par JS -->
+        <div id="mainContent">
+            <div class="grid" id="mainGrid"></div>
         </div>
     </div>
 
-    <!-- Modal Ajouter / Modifier Client -->
-    <div class="modal-overlay" id="addClientModal">
+    <!-- Modal Formulaire Standard -->
+    <div class="modal-overlay" id="formModal">
         <div class="modal-content">
-            <div class="modal-header">
-                <h2 id="modalTitle">Nouveau Client</h2>
-                <button onclick="closeModal('addClientModal')" style="background:none; border:none; cursor:pointer;">
-                    <i data-lucide="x"></i>
-                </button>
+            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+                <h2 id="modalTitle">Nouveau</h2>
+                <button onclick="closeModal('formModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
             </div>
-            <form id="clientForm" onsubmit="handleFormSubmit(event)">
-                <input type="hidden" id="editClientId">
-                <div class="form-grid">
+            <form id="mainForm" onsubmit="handleSubmit(event)">
+                <input type="hidden" id="editId">
+                
+                <div id="fields-entity" class="form-grid">
                     <div class="form-group full">
-                        <label>Nom Complet *</label>
-                        <input type="text" id="name" required placeholder="Ex: Jean Dupont">
+                        <label>Nom Complet / Raison Sociale *</label>
+                        <input type="text" id="formName">
                     </div>
                     <div class="form-group">
                         <label>Contact Principal *</label>
-                        <input type="tel" id="phone1" required placeholder="01 02 03 04 05">
+                        <input type="tel" id="formPhone1">
                     </div>
                     <div class="form-group">
                         <label>Contact Secondaire</label>
-                        <input type="tel" id="phone2" placeholder="Optionnel">
+                        <input type="tel" id="formPhone2">
                     </div>
                     <div class="form-group full">
                         <label>Adresse Géographique *</label>
-                        <input type="text" id="address" required placeholder="Ville, Quartier, Rue">
+                        <input type="text" id="formAddress">
                     </div>
                     <div class="form-group">
                         <label>Statut *</label>
-                        <select id="status" required onchange="handleStatusChange()">
+                        <select id="formStatus" onchange="toggleLimitField()">
                             <option value="Occasionnel">Occasionnel</option>
                             <option value="Abonné">Abonné</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label id="limitLabel">Plafond Financier (FCFA)</label>
-                        <input type="number" id="limit" placeholder="Réservé aux abonnés" disabled>
+                        <label>Plafond Financier (FCFA) *</label>
+                        <input type="number" id="formLimit">
                     </div>
                     <div class="form-group full">
                         <label>Adresse Mail</label>
-                        <input type="email" id="email" placeholder="client@exemple.com">
+                        <input type="email" id="formEmail">
                     </div>
                 </div>
-                <div style="margin-top: 1.5rem; display: flex; justify-content: flex-end; gap: 10px;">
-                    <button type="button" class="btn" style="background: #94a3b8;" onclick="closeModal('addClientModal')">Annuler</button>
+
+                <div id="fields-article" class="form-grid" style="display:none;">
+                    <div class="form-group full">
+                        <label>Nom de l'Article *</label>
+                        <input type="text" id="artName">
+                    </div>
+                    <div class="form-group">
+                        <label>Famille *</label>
+                        <select id="artFamily"></select>
+                        <div class="list-manager">
+                            <input type="text" id="newFamily" placeholder="Nouvelle famille">
+                            <button type="button" onclick="addListOption('artFamily', 'newFamily', 'families')" class="btn" style="padding:5px 10px;"><i data-lucide="plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Sous-Famille *</label>
+                        <select id="artSubFamily"></select>
+                        <div class="list-manager">
+                            <input type="text" id="newSubFamily" placeholder="Nouvelle sous-famille">
+                            <button type="button" onclick="addListOption('artSubFamily', 'newSubFamily', 'subfamilies')" class="btn" style="padding:5px 10px;"><i data-lucide="plus"></i></button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label>Prix Initial *</label>
+                        <input type="number" id="artPrice" min="0" oninput="calculateArticleValues()">
+                    </div>
+                    <div class="form-group">
+                        <label>Stock Initial *</label>
+                        <input type="number" id="artStock" min="0" oninput="calculateArticleValues()">
+                    </div>
+                    <div class="form-group">
+                        <label>Valeur Stock Initial (Auto)</label>
+                        <input type="text" id="artStockVal" readonly>
+                    </div>
+                    <div class="form-group">
+                        <label>Prix de Revient (Auto)</label>
+                        <input type="text" id="artCostPrice" readonly>
+                    </div>
+                    <div class="form-group full">
+                        <label>Photo d'illustration</label>
+                        <input type="file" id="artPhoto" accept="image/*" onchange="handleImageUpload(this)">
+                        <input type="hidden" id="artPhotoData">
+                        <div id="photoPreview" style="margin-top:10px; height:100px; display:none;">
+                            <img src="" id="previewImg" style="height:100%; border-radius:8px;">
+                        </div>
+                    </div>
+                </div>
+
+                <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:10px;">
+                    <button type="button" class="btn" style="background:#94a3b8;" onclick="closeModal('formModal')">Annuler</button>
                     <button type="submit" class="btn">Enregistrer</button>
                 </div>
             </form>
         </div>
     </div>
 
-    <!-- Modal Détails Client -->
-    <div class="modal-overlay" id="detailModal">
-        <div class="modal-content" id="detailContent">
-            <!-- Injecté par JS -->
+    <!-- Modal Vente / Devis (Placeholder pour fonctions futures) -->
+    <div class="modal-overlay" id="saleModal">
+        <div class="modal-content modal-lg">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+                <h2 id="saleModalTitle">Création de Document</h2>
+                <button onclick="closeModal('saleModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <p style="text-align:center; padding:3rem; opacity:0.6;">Interface d'édition de <span id="doc-type-label"></span> en cours de chargement...</p>
         </div>
     </div>
 
-    <!-- Modal de Confirmation de Suppression -->
-    <div class="modal-overlay" id="deleteConfirmModal">
-        <div class="modal-content" style="max-width: 400px; text-align: center;">
-            <div class="modal-header" style="justify-content: center;">
-                <h2 style="color: #ef4444;">Supprimer le client ?</h2>
-            </div>
-            <p style="margin-bottom: 1.5rem;">Saisissez le code administrateur pour confirmer la suppression définitive.</p>
-            <input type="password" id="adminCode" placeholder="Code Administrateur" style="margin-bottom: 1.5rem; text-align: center;">
-            <input type="hidden" id="deleteClientId">
-            <div style="display: flex; gap: 10px; justify-content: center;">
-                <button class="btn" style="background: #94a3b8;" onclick="closeModal('deleteConfirmModal')">Annuler</button>
-                <button class="btn btn-danger" onclick="confirmDelete()">Confirmer</button>
+    <!-- Modal Détails -->
+    <div class="modal-overlay" id="detailsModal">
+        <div class="modal-content" id="detailsContainer"></div>
+    </div>
+
+    <!-- Modal Suppression -->
+    <div class="modal-overlay" id="deleteModal">
+        <div class="modal-content" style="max-width:400px; text-align:center;">
+            <h2 style="color:#ef4444; margin-bottom:1rem;">Confirmer la suppression</h2>
+            <p style="margin-bottom:1.5rem; font-size:0.9rem;">Saisissez le code administrateur pour valider.</p>
+            <input type="password" id="adminCode" placeholder="Code Administrateur" style="text-align:center; margin-bottom:1rem;">
+            <div style="display:flex; gap:10px; justify-content:center;">
+                <button class="btn" style="background:#94a3b8;" onclick="closeModal('deleteModal')">Annuler</button>
+                <button class="btn btn-danger" onclick="executeDelete()">Supprimer</button>
             </div>
         </div>
     </div>
 
-    <div class="toast" id="toast">Opération réussie !</div>
+    <div id="toast"></div>
 
     <script>
-        // --- DATA STATE ---
-        let clients = JSON.parse(localStorage.getItem('clients_db_v2')) || [
-            {
-                id: "CL-001",
-                name: "Kouadio Konan",
-                phone1: "+225 07070707",
-                phone2: "",
-                address: "Abidjan, Cocody",
-                limit: 1000000,
-                status: "Abonné",
-                email: "konan@mail.com",
-                date: "2023-10-25",
-                purchases: 15,
-                totalSpent: 450000
-            },
-            {
-                id: "CL-002",
-                name: "Marie Traoré",
-                phone1: "+225 05050505",
-                phone2: "01010101",
-                address: "Bouaké, Commerce",
-                limit: 0,
-                status: "Occasionnel",
-                email: "marie.t@mail.com",
-                date: "2023-11-02",
-                purchases: 3,
-                totalSpent: 85000
-            }
-        ];
+        // --- ETAT GLOBAL ---
+        let currentView = 'CLIENT';
+        let families = JSON.parse(localStorage.getItem('crm_families')) || ["Electronique", "Bureau", "Divers"];
+        let subfamilies = JSON.parse(localStorage.getItem('crm_subfamilies')) || ["Informatique", "Papeterie", "Autre"];
+        
+        let db = {
+            CLIENT: JSON.parse(localStorage.getItem('crm_clients')) || [],
+            FOURNISSEUR: JSON.parse(localStorage.getItem('crm_suppliers')) || [],
+            ARTICLE: JSON.parse(localStorage.getItem('crm_articles')) || [],
+            VENTE: JSON.parse(localStorage.getItem('crm_ventes')) || []
+        };
+        let deleteTargetId = null;
 
-        // --- THEME MANAGEMENT ---
-        function toggleTheme() {
-            const body = document.body;
-            const btn = document.getElementById('theme-btn');
-            if (body.getAttribute('data-theme') === 'dark') {
-                body.removeAttribute('data-theme');
-                btn.innerHTML = '<i data-lucide="moon"></i>';
+        // --- NAVIGATION ---
+        function switchView(view) {
+            currentView = view;
+            document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(`tab-${view}`).classList.add('active');
+            
+            const btnLabel = document.getElementById('btn-label');
+            const grid = document.getElementById('mainGrid');
+            const dynamicButtons = document.getElementById('dynamic-buttons');
+
+            if (view === 'VENTE') {
+                // Boutons spécifiques pour l'onglet Ventes
+                dynamicButtons.innerHTML = `
+                    <button class="btn btn-accent" onclick="openSaleForm('Devis')">
+                        <i data-lucide="file-text"></i> DEVIS
+                    </button>
+                    <button class="btn" onclick="openSaleForm('Facture')">
+                        <i data-lucide="receipt"></i> FACTURE
+                    </button>
+                `;
             } else {
-                body.setAttribute('data-theme', 'dark');
-                btn.innerHTML = '<i data-lucide="sun"></i>';
+                // Boutons standards pour les autres onglets
+                if(btnLabel) btnLabel.textContent = view.toLowerCase();
+                dynamicButtons.innerHTML = `
+                    <button class="btn" onclick="exportData()">
+                        <i data-lucide="download"></i> Exporter CSV
+                    </button>
+                    <button class="btn" onclick="openAddForm()">
+                        <i data-lucide="plus-circle"></i> Nouveau <span id="btn-label">${view.toLowerCase()}</span>
+                    </button>
+                `;
             }
-            lucide.createIcons();
+            
+            if(view === 'ARTICLE') grid.classList.add('grid-articles');
+            else grid.classList.remove('grid-articles');
+
+            render();
         }
 
-        // --- FORM LOGIC ---
-        function handleStatusChange() {
-            const status = document.getElementById('status').value;
-            const limitInput = document.getElementById('limit');
-            if (status === 'Abonné') {
-                limitInput.disabled = false;
-                limitInput.placeholder = "Ex: 500000";
-                limitInput.required = true;
-            } else {
-                limitInput.disabled = true;
-                limitInput.placeholder = "Réservé aux abonnés";
-                limitInput.required = false;
-                limitInput.value = "";
+        // --- RENDER ---
+        function render(data = db[currentView]) {
+            const grid = document.getElementById('mainGrid');
+            
+            if (currentView === 'VENTE') {
+                renderVentes(grid, data);
+                return;
             }
-        }
 
-        // --- RENDER CLIENTS ---
-        function renderClients(data = clients) {
-            const grid = document.getElementById('clientGrid');
             if (data.length === 0) {
-                grid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; padding: 3rem; color:#64748b;">Aucun client trouvé.</div>`;
+                grid.innerHTML = `<div class="full" style="text-align:center; padding:4rem; opacity:0.5; grid-column: 1 / -1;">Aucun enregistrement dans ${currentView}.</div>`;
                 return;
             }
-            grid.innerHTML = data.map(client => `
-                <div class="client-card" onclick="viewDetails('${client.id}')">
-                    <div class="client-header">
-                        <span class="client-code">${client.id}</span>
-                        <span class="status-badge ${client.status === 'Abonné' ? 'status-subscriber' : 'status-occasional'}">
-                            ${client.status}
-                        </span>
+
+            if (currentView === 'ARTICLE') {
+                grid.innerHTML = data.map(item => `
+                    <div class="card" onclick="showDetails('${item.id}')">
+                        <div class="article-img-container">
+                            ${item.photo ? `<img src="${item.photo}">` : `<i data-lucide="image" style="color:#94a3b8"></i>`}
+                            ${item.stock <= 0 ? `<div class="rupture-overlay"><span class="rupture-text">RUPTURE</span></div>` : ''}
+                        </div>
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="card-code">${item.id}</span>
+                            ${item.stock <= 0 ? `<span class="status-badge status-rupture">RUPTURE</span>` : ''}
+                        </div>
+                        <h3 class="card-name">${item.name}</h3>
+                        <div class="card-info">
+                            <div style="display: flex; gap: 8px; align-items: center;">
+                                <span style="color: #f97316; font-weight: 600;">${Number(item.stock).toLocaleString()} en stock</span>
+                                <span style="color: var(--text-main); font-weight: 800;">${Number(item.price).toLocaleString()} FCFA</span>
+                            </div>
+                            <span style="font-size:0.75rem; color:#94a3b8;">${item.family} / ${item.subfamily}</span>
+                        </div>
                     </div>
-                    <h3 class="client-name">${client.name}</h3>
-                    <div class="client-info">
-                        <div class="info-item"><i data-lucide="phone" size="14"></i> ${client.phone1}</div>
-                        <div class="info-item"><i data-lucide="map-pin" size="14"></i> ${client.address}</div>
-                        <div class="info-item"><i data-lucide="calendar" size="14"></i> Ajouté le ${new Date(client.date).toLocaleDateString()}</div>
+                `).join('');
+            } else {
+                grid.innerHTML = data.map(item => `
+                    <div class="card" onclick="showDetails('${item.id}')">
+                        <div style="display:flex; justify-content:space-between; align-items:center;">
+                            <span class="card-code">${item.id}</span>
+                            <span class="status-badge ${item.status === 'Abonné' ? 'status-subscriber' : 'status-occasional'}">${item.status}</span>
+                        </div>
+                        <h3 class="card-name">${item.name}</h3>
+                        <div class="card-info">
+                            <span><i data-lucide="phone" size="14"></i> ${item.phone1}</span>
+                            <span><i data-lucide="map-pin" size="14"></i> ${item.address}</span>
+                        </div>
                     </div>
-                </div>
-            `).join('');
+                `).join('');
+            }
             lucide.createIcons();
         }
 
-        // --- SEARCH/FILTER ---
-        function filterClients() {
-            const val = document.getElementById('searchInput').value.toLowerCase();
-            const filtered = clients.filter(c => 
-                c.name.toLowerCase().includes(val) || 
-                c.id.toLowerCase().includes(val) || 
-                c.phone1.includes(val)
-            );
-            renderClients(filtered);
-        }
-
-        // --- MODAL HELPERS ---
-        function openModal(id) {
-            document.getElementById(id).style.display = 'flex';
-        }
-
-        function closeModal(id) {
-            document.getElementById(id).style.display = 'none';
-        }
-
-        function openAddModal() {
-            document.getElementById('modalTitle').textContent = "Nouveau Client";
-            document.getElementById('clientForm').reset();
-            document.getElementById('editClientId').value = "";
-            handleStatusChange();
-            openModal('addClientModal');
-        }
-
-        // --- FORM SUBMISSION (ADD OR EDIT) ---
-        function handleFormSubmit(e) {
-            e.preventDefault();
-            const editId = document.getElementById('editClientId').value;
-            
-            const name = document.getElementById('name').value.trim();
-            const phone1 = document.getElementById('phone1').value.trim();
-            const phone2 = document.getElementById('phone2').value.trim();
-            const address = document.getElementById('address').value.trim();
-            const limit = document.getElementById('limit').value || 0;
-            const status = document.getElementById('status').value;
-            const email = document.getElementById('email').value.trim().toLowerCase();
-
-            // --- VÉRIFICATION DES DOUBLONS ---
-            const otherClients = editId ? clients.filter(c => c.id !== editId) : clients;
-
-            const isDuplicateName = otherClients.some(c => c.name.toLowerCase() === name.toLowerCase());
-            const isDuplicateEmail = email && otherClients.some(c => c.email && c.email.toLowerCase() === email);
-            
-            // Vérification croisée des téléphones
-            const isDuplicatePhone = otherClients.some(c => 
-                c.phone1 === phone1 || 
-                (phone2 && c.phone1 === phone2) ||
-                (c.phone2 && c.phone2 === phone1) ||
-                (phone2 && c.phone2 && c.phone2 === phone2)
-            );
-
-            if (isDuplicateName) {
-                showToast("Erreur : Ce nom existe déjà !", true);
-                return;
-            }
-            if (isDuplicatePhone) {
-                showToast("Erreur : Ce numéro de contact est déjà utilisé !", true);
-                return;
-            }
-            if (isDuplicateEmail) {
-                showToast("Erreur : Cette adresse mail existe déjà !", true);
-                return;
-            }
-
-            const formData = { name, phone1, phone2, address, limit, status, email };
-
-            if (editId) {
-                // Mode Edition
-                const index = clients.findIndex(c => c.id === editId);
-                clients[index] = { ...clients[index], ...formData };
-                showToast("Informations mises à jour !");
-            } else {
-                // Mode Ajout
-                const nextNum = clients.length > 0 ? Math.max(...clients.map(c => parseInt(c.id.split('-')[1]))) + 1 : 1;
-                const newId = `CL-${String(nextNum).padStart(3, '0')}`;
-                
-                const newClient = {
-                    id: newId,
-                    ...formData,
-                    date: new Date().toISOString().split('T')[0],
-                    purchases: 0,
-                    totalSpent: 0
-                };
-                clients.push(newClient);
-                showToast("Nouveau client ajouté !");
-            }
-
-            localStorage.setItem('clients_db_v2', JSON.stringify(clients));
-            renderClients();
-            closeModal('addClientModal');
-            document.getElementById('clientForm').reset();
-            document.getElementById('editClientId').value = "";
-            handleStatusChange();
-        }
-
-        // --- VIEW DETAILS ---
-        function viewDetails(id) {
-            const client = clients.find(c => c.id === id);
-            const content = document.getElementById('detailContent');
-            
-            content.innerHTML = `
-                <div class="modal-header">
-                    <h2>Fiche Client : ${client.name}</h2>
-                    <button onclick="closeModal('detailModal')" style="background:none; border:none; cursor:pointer;">
-                        <i data-lucide="x"></i>
-                    </button>
-                </div>
-                <div class="client-info" style="font-size: 1rem; gap: 15px;">
-                    <div class="info-item"><i data-lucide="hash"></i> <strong>Code:</strong> ${client.id}</div>
-                    <div class="info-item"><i data-lucide="phone"></i> <strong>Contacts:</strong> ${client.phone1} ${client.phone2 ? '/ ' + client.phone2 : ''}</div>
-                    <div class="info-item"><i data-lucide="mail"></i> <strong>Email:</strong> ${client.email || 'N/A'}</div>
-                    <div class="info-item"><i data-lucide="map-pin"></i> <strong>Adresse:</strong> ${client.address}</div>
-                    <div class="info-item"><i data-lucide="credit-card"></i> <strong>Plafond:</strong> ${client.status === 'Abonné' ? Number(client.limit).toLocaleString() + ' FCFA' : 'Aucun (Client Occasionnel)'}</div>
-                </div>
-
-                <div class="performance-panel">
-                    <h3 style="margin-bottom: 1rem;"><i data-lucide="trending-up"></i> Performances</h3>
-                    <div class="stat-grid">
-                        <div class="stat-box">
-                            <span class="stat-val">${client.purchases}</span>
-                            <small>Commandes</small>
-                        </div>
-                        <div class="stat-box">
-                            <span class="stat-val">${Number(client.totalSpent).toLocaleString()}</span>
-                            <small>Total CA (FCFA)</small>
-                        </div>
-                    </div>
-                </div>
-
-                <div style="margin-top: 2rem; display: flex; gap: 10px; justify-content: flex-end;">
-                    <button class="btn" style="background: #1e293b;" onclick="prepareEdit('${client.id}')">
-                        <i data-lucide="edit"></i> Modifier
-                    </button>
-                    <button class="btn btn-danger" onclick="prepareDelete('${client.id}')">
-                        <i data-lucide="trash-2"></i> Supprimer
-                    </button>
+        function renderVentes(container, data) {
+            container.innerHTML = `
+                <div class="card full" style="padding: 0; overflow-x: auto; grid-column: 1 / -1;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>N°</th>
+                                <th>Date</th>
+                                <th>Client</th>
+                                <th>Type</th>
+                                <th>Total (FCFA)</th>
+                                <th>Reste</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
+                              data.map(v => `
+                                <tr>
+                                    <td><strong>${v.num}</strong></td>
+                                    <td>${v.date}</td>
+                                    <td>${v.clientName}</td>
+                                    <td><small>${v.type}</small></td>
+                                    <td>${Number(v.ttc).toLocaleString()}</td>
+                                    <td style="color:${v.reste > 0 ? '#dc2626' : '#16a34a'}; font-weight:bold;">${Number(v.reste).toLocaleString()}</td>
+                                    <td><span class="status-badge ${v.reste === 0 ? 'status-paid' : 'status-unpaid'}">${v.reste === 0 ? 'Soldé' : 'Impayé'}</span></td>
+                                    <td>
+                                        <button class="btn" style="padding:5px 10px; font-size:0.75rem;" onclick="showVenteDetails('${v.num}')">Détails</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
                 </div>
             `;
-            openModal('detailModal');
             lucide.createIcons();
         }
 
-        // --- PREPARE EDIT ---
-        function prepareEdit(id) {
-            const client = clients.find(c => c.id === id);
-            document.getElementById('modalTitle').textContent = "Modifier le Client";
-            document.getElementById('editClientId').value = client.id;
-            document.getElementById('name').value = client.name;
-            document.getElementById('phone1').value = client.phone1;
-            document.getElementById('phone2').value = client.phone2;
-            document.getElementById('address').value = client.address;
-            document.getElementById('status').value = client.status;
-            document.getElementById('limit').value = client.limit;
-            document.getElementById('email').value = client.email;
+        // --- FONCTIONS VENTES ---
+        function openSaleForm(type) {
+            document.getElementById('saleModalTitle').textContent = "Édition de " + type;
+            document.getElementById('doc-type-label').textContent = type.toLowerCase();
+            openModal('saleModal');
+        }
+
+        // --- GESTION DES LISTES ARTICLES ---
+        function updateSelects() {
+            const famSel = document.getElementById('artFamily');
+            const subSel = document.getElementById('artSubFamily');
+            if(famSel) famSel.innerHTML = families.map(f => `<option value="${f}">${f}</option>`).join('');
+            if(subSel) subSel.innerHTML = subfamilies.map(s => `<option value="${s}">${s}</option>`).join('');
+        }
+
+        function addListOption(selId, inpId, storageKey) {
+            const val = document.getElementById(inpId).value.trim();
+            if(!val) return;
+            if(storageKey === 'families') families.push(val);
+            else subfamilies.push(val);
             
-            handleStatusChange();
-            closeModal('detailModal');
-            openModal('addClientModal');
+            localStorage.setItem(`crm_${storageKey}`, JSON.stringify(storageKey === 'families' ? families : subfamilies));
+            document.getElementById(inpId).value = "";
+            updateSelects();
+            showToast("Liste mise à jour");
         }
 
-        // --- DELETE LOGIC ---
-        function prepareDelete(id) {
-            document.getElementById('deleteClientId').value = id;
-            document.getElementById('adminCode').value = "";
-            openModal('deleteConfirmModal');
+        // --- CALCULS ARTICLES ---
+        function calculateArticleValues() {
+            const price = parseFloat(document.getElementById('artPrice').value) || 0;
+            const stock = parseFloat(document.getElementById('artStock').value) || 0;
+            
+            document.getElementById('artStockVal').value = (price * stock).toLocaleString() + " FCFA";
+            document.getElementById('artCostPrice').value = price.toLocaleString() + " FCFA";
         }
 
-        function confirmDelete() {
-            const id = document.getElementById('deleteClientId').value;
-            const code = document.getElementById('adminCode').value;
+        function handleImageUpload(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('artPhotoData').value = e.target.result;
+                    document.getElementById('previewImg').src = e.target.result;
+                    document.getElementById('photoPreview').style.display = 'block';
+                }
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
 
-            if (code === "ICONIC") {
-                clients = clients.filter(c => c.id !== id);
-                localStorage.setItem('clients_db_v2', JSON.stringify(clients));
-                renderClients();
-                closeModal('deleteConfirmModal');
-                closeModal('detailModal');
-                showToast("Client supprimé avec succès !");
+        // --- FORMULAIRE ---
+        function openAddForm() {
+            document.getElementById('mainForm').reset();
+            document.getElementById('editId').value = "";
+            document.getElementById('modalTitle').textContent = `Nouveau ${currentView.toLowerCase()}`;
+            document.getElementById('photoPreview').style.display = 'none';
+            document.getElementById('artPhotoData').value = "";
+            
+            if(currentView === 'ARTICLE') {
+                document.getElementById('fields-entity').style.display = 'none';
+                document.getElementById('fields-article').style.display = 'grid';
+                updateSelects();
             } else {
-                showToast("Code Administrateur Incorrect !", true);
-                document.getElementById('adminCode').style.borderColor = "#ef4444";
+                document.getElementById('fields-entity').style.display = 'grid';
+                document.getElementById('fields-article').style.display = 'none';
+                toggleLimitField();
             }
+            openModal('formModal');
         }
 
-        // --- EXPORT CSV ---
-        function exportToCSV() {
-            if (clients.length === 0) {
-                showToast("Aucun client à exporter", true);
-                return;
+        function handleSubmit(e) {
+            e.preventDefault();
+            const editId = document.getElementById('editId').value;
+            let payload = {};
+
+            if(currentView === 'ARTICLE') {
+                payload = {
+                    name: document.getElementById('artName').value.trim(),
+                    family: document.getElementById('artFamily').value,
+                    subfamily: document.getElementById('artSubFamily').value,
+                    price: document.getElementById('artPrice').value,
+                    stock: document.getElementById('artStock').value,
+                    photo: document.getElementById('artPhotoData').value
+                };
+                if(!payload.name || !payload.price || !payload.stock) return showToast("Veuillez remplir les champs obligatoires", "#ef4444");
+            } else {
+                payload = {
+                    name: document.getElementById('formName').value.trim(),
+                    phone1: document.getElementById('formPhone1').value.trim(),
+                    phone2: document.getElementById('formPhone2').value.trim(),
+                    address: document.getElementById('formAddress').value.trim(),
+                    status: document.getElementById('formStatus').value,
+                    limit: document.getElementById('formLimit').value || 0,
+                    email: document.getElementById('formEmail').value.trim().toLowerCase()
+                };
+                if(!payload.name || !payload.phone1 || !payload.address) return showToast("Veuillez remplir les champs obligatoires", "#ef4444");
             }
 
-            const headers = ["ID", "Nom", "Contact1", "Contact2", "Adresse", "Email", "Statut", "Plafond", "Date_Ajout"];
-            const rows = clients.map(c => [
-                c.id,
-                c.name,
-                c.phone1,
-                c.phone2,
-                c.address,
-                c.email,
-                c.status,
-                c.limit,
-                c.date
-            ]);
+            const list = db[currentView];
+            const isDuplicate = list.some(item => {
+                if(editId && item.id === editId) return false;
+                if(currentView === 'ARTICLE') return item.name.toLowerCase() === payload.name.toLowerCase();
+                return item.name.toLowerCase() === payload.name.toLowerCase() || item.phone1 === payload.phone1;
+            });
 
-            const csvContent = [
-                headers.join(";"),
-                ...rows.map(r => r.join(";"))
-            ].join("\n");
+            if(isDuplicate) return showToast("Erreur: Un enregistrement similaire existe déjà.", "#ef4444");
 
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.setAttribute("href", url);
-            link.setAttribute("download", `base_clients_${new Date().toISOString().split('T')[0]}.csv`);
-            document.body.appendChild(link);
-            link.click();
-            document.body.removeChild(link);
-            showToast("Exportation CSV réussie !");
+            if(editId) {
+                const idx = list.findIndex(i => i.id === editId);
+                list[idx] = { ...list[idx], ...payload };
+            } else {
+                let prefix = currentView === 'CLIENT' ? 'CL-' : (currentView === 'FOURNISSEUR' ? 'Fr-00' : 'A-00');
+                const nextIdNum = list.length > 0 ? Math.max(...list.map(i => parseInt(i.id.replace(prefix, "")))) + 1 : 1;
+                const newId = `${prefix}${String(nextIdNum).padStart(currentView === 'CLIENT' ? 3 : 1, '0')}`;
+                list.push({ id: newId, ...payload, date: new Date().toISOString().split('T')[0] });
+            }
+
+            saveAndRefresh();
+            closeModal('formModal');
+            showToast("Opération réussie !");
         }
 
-        function showToast(msg, isError = false) {
-            const t = document.getElementById('toast');
-            t.textContent = msg;
-            if (isError) t.classList.add('error');
-            else t.classList.remove('error');
+        // --- DETAILS ---
+        function showDetails(id) {
+            const item = db[currentView].find(i => i.id === id);
+            const container = document.getElementById('detailsContainer');
             
+            let html = `
+                <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+                    <h2>Détails ${currentView.toLowerCase()}</h2>
+                    <button onclick="closeModal('detailsModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+                </div>
+            `;
+
+            if(currentView === 'ARTICLE') {
+                html += `
+                    <div style="display:flex; gap:20px;">
+                        <div style="flex:1; max-width:150px; position:relative;">
+                            ${item.photo ? `<img src="${item.photo}" style="width:100%; border-radius:12px;">` : `<div style="width:100%; height:100px; background:#f1f5f9; border-radius:12px; display:flex; align-items:center; justify-content:center;"><i data-lucide="image"></i></div>`}
+                            ${item.stock <= 0 ? `<div class="rupture-overlay" style="border-radius:12px;"><span class="rupture-text" style="font-size:0.8rem;">RUPTURE</span></div>` : ''}
+                        </div>
+                        <div class="card-info" style="font-size:1rem; flex:2;">
+                            <p><strong>Code:</strong> ${item.id}</p>
+                            <p><strong>Nom:</strong> ${item.name}</p>
+                            <p><strong>Famille:</strong> ${item.family} / ${item.subfamily}</p>
+                            <p><strong>Prix Initial:</strong> ${Number(item.price).toLocaleString()} FCFA</p>
+                            <p><strong>Stock Actuel:</strong> ${Number(item.stock).toLocaleString()}</p>
+                            <p><strong>Valeur Stock:</strong> ${(item.price * item.stock).toLocaleString()} FCFA</p>
+                        </div>
+                    </div>
+                `;
+            } else {
+                html += `
+                    <div class="card-info" style="font-size:1rem; gap:10px;">
+                        <p><strong>Code:</strong> ${item.id}</p>
+                        <p><strong>Nom:</strong> ${item.name}</p>
+                        <p><strong>Contacts:</strong> ${item.phone1} ${item.phone2 ? '/ '+item.phone2 : ''}</p>
+                        <p><strong>Email:</strong> ${item.email || 'N/A'}</p>
+                        <p><strong>Adresse:</strong> ${item.address}</p>
+                        <p><strong>Statut:</strong> ${item.status}</p>
+                    </div>
+                `;
+            }
+
+            html += `
+                <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:10px;">
+                    <button class="btn" style="background:#1e293b;" onclick="editItem('${item.id}')"><i data-lucide="edit"></i> Modifier</button>
+                    <button class="btn btn-danger" onclick="promptDelete('${item.id}')"><i data-lucide="trash-2"></i> Supprimer</button>
+                </div>
+            `;
+            container.innerHTML = html;
+            openModal('detailsModal');
+            lucide.createIcons();
+        }
+
+        function editItem(id) {
+            const item = db[currentView].find(i => i.id === id);
+            openAddForm();
+            document.getElementById('editId').value = item.id;
+            if(currentView === 'ARTICLE') {
+                document.getElementById('artName').value = item.name;
+                document.getElementById('artFamily').value = item.family;
+                document.getElementById('artSubFamily').value = item.subfamily;
+                document.getElementById('artPrice').value = item.price;
+                document.getElementById('artStock').value = item.stock;
+                document.getElementById('artPhotoData').value = item.photo || "";
+                if(item.photo) {
+                    document.getElementById('previewImg').src = item.photo;
+                    document.getElementById('photoPreview').style.display = 'block';
+                }
+                calculateArticleValues();
+            } else {
+                document.getElementById('formName').value = item.name;
+                document.getElementById('formPhone1').value = item.phone1;
+                document.getElementById('formPhone2').value = item.phone2;
+                document.getElementById('formAddress').value = item.address;
+                document.getElementById('formStatus').value = item.status;
+                document.getElementById('formLimit').value = item.limit;
+                document.getElementById('formEmail').value = item.email;
+                toggleLimitField();
+            }
+            closeModal('detailsModal');
+        }
+
+        // --- SUPPRESSION ---
+        function promptDelete(id) {
+            deleteTargetId = id;
+            document.getElementById('adminCode').value = "";
+            openModal('deleteModal');
+        }
+
+        function executeDelete() {
+            if(document.getElementById('adminCode').value === 'ICONIC') {
+                db[currentView] = db[currentView].filter(i => i.id !== deleteTargetId);
+                saveAndRefresh();
+                closeModal('deleteModal');
+                closeModal('detailsModal');
+                showToast("Suppression effectuée");
+            } else showToast("Code Administrateur Incorrect", "#ef4444");
+        }
+
+        // --- UTILITAIRES ---
+        function toggleTheme() {
+            const b = document.body;
+            b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
+            lucide.createIcons();
+        }
+
+        function saveAndRefresh() {
+            const keys = { CLIENT: 'crm_clients', FOURNISSEUR: 'crm_suppliers', ARTICLE: 'crm_articles', VENTE: 'crm_ventes' };
+            localStorage.setItem(keys[currentView], JSON.stringify(db[currentView]));
+            render();
+        }
+
+        function openModal(id) { document.getElementById(id).classList.add('active'); }
+        function closeModal(id) { document.getElementById(id).classList.remove('active'); }
+        
+        function toggleLimitField() {
+            const f = document.getElementById('formLimit');
+            const s = document.getElementById('formStatus').value;
+            if(f) {
+                f.disabled = s !== 'Abonné';
+                if(f.disabled) f.value = "";
+            }
+        }
+
+        function showToast(msg, color = "#10b981") {
+            const t = document.getElementById('toast');
+            t.textContent = msg; t.style.backgroundColor = color;
             t.classList.add('show');
             setTimeout(() => t.classList.remove('show'), 3000);
         }
 
-        function switchTab(tab) {
-            if(tab !== 'CLIENT') {
-                document.getElementById('main-content').innerHTML = `
-                    <div style="text-align:center; padding: 100px; opacity:0.5;">
-                        <i data-lucide="construction" size="64"></i>
-                        <h2>Module ${tab}</h2>
-                        <p>En cours de développement.</p>
-                        <button class="btn" style="margin-top:20px" onclick="location.reload()">Retour au CRM</button>
-                    </div>
-                `;
-                lucide.createIcons();
-            }
+        function filterData() {
+            const q = document.getElementById('searchInput').value.toLowerCase();
+            render(db[currentView].filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));
         }
 
-        // --- INITIALIZE ---
-        window.onload = () => {
-            renderClients();
-            lucide.createIcons();
-        };
+        function exportData() {
+            const list = db[currentView];
+            if(!list.length) return showToast("Rien à exporter", "#ef4444");
+            let head, body;
+            if(currentView === 'ARTICLE') {
+                head = "Code;Nom;Famille;SousFamille;Prix;Stock\n";
+                body = list.map(i => `${i.id};${i.name};${i.family};${i.subfamily};${i.price};${i.stock}`).join("\n");
+            } else if(currentView === 'VENTE') {
+                head = "Num;Date;Client;Type;Total;Reste\n";
+                body = list.map(i => `${i.num};${i.date};${i.clientName};${i.type};${i.ttc};${i.reste}`).join("\n");
+            } else {
+                head = "Code;Nom;Contact;Adresse;Status\n";
+                body = list.map(i => `${i.id};${i.name};${i.phone1};${i.address};${i.status}`).join("\n");
+            }
+            const blob = new Blob([head + body], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob);
+            link.download = `Export_${currentView}_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+        }
 
+        window.onload = () => { render(); lucide.createIcons(); };
     </script>
 </body>
 </html>

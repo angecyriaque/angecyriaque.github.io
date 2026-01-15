@@ -66,23 +66,13 @@
             text-decoration: none;
             font-weight: 600;
             transition: var(--transition);
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-            opacity: 0.7;
+            display: flex; align-items: center; gap: 8px; cursor: pointer; opacity: 0.7;
         }
 
         .nav-item.active { background-color: var(--active-bg); color: var(--active-text); transform: translateY(-2px); opacity: 1; }
 
         .theme-toggle {
-            background: rgba(255,255,255,0.1);
-            border: none;
-            color: white;
-            padding: 10px;
-            border-radius: 50%;
-            cursor: pointer;
-            transition: var(--transition);
+            background: rgba(255,255,255,0.1); border: none; color: white; padding: 10px; border-radius: 50%; cursor: pointer; transition: var(--transition);
         }
 
         /* --- LAYOUT --- */
@@ -110,11 +100,8 @@
         .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); }
         .btn-accent { background: var(--active-bg); }
         
-        /* Nouveau bouton Modifier Jaune */
         .btn-edit-yellow {
-            background: linear-gradient(135deg, #facc15, #eab308);
-            color: #422006;
-            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(135deg, #facc15, #eab308); color: #422006; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
 
         /* --- GRID & CARDS --- */
@@ -128,7 +115,6 @@
         }
         .card:hover { transform: translateY(-5px); border-color: var(--active-bg); box-shadow: var(--shadow); }
 
-        /* Tables */
         table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
         th { text-align: left; padding: 12px; border-bottom: 2px solid var(--border-color); color: #64748b; font-weight: 600; }
         td { padding: 12px; border-bottom: 1px solid var(--border-color); vertical-align: middle; }
@@ -226,7 +212,6 @@
         input:checked + .slider { background-color: var(--active-bg); }
         input:checked + .slider:before { transform: translateX(20px); }
 
-        /* Style Détails opération */
         .details-section { margin-top: 1.5rem; padding: 1rem; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 12px; }
         .details-title { font-size: 0.85rem; font-weight: bold; color: var(--nav-bg); border-bottom: 2px solid var(--border-color); margin-bottom: 10px; padding-bottom: 5px; text-transform: uppercase; }
         .details-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; font-size: 0.9rem; }
@@ -287,7 +272,6 @@
             </div>
             <form id="mainForm" onsubmit="handleSubmit(event)">
                 <input type="hidden" id="editId">
-                
                 <div id="fields-entity" class="form-grid">
                     <div class="form-group full">
                         <label id="formNameLabel">Nom Complet / Raison Sociale *</label>
@@ -335,7 +319,6 @@
                             </div>
                         </div>
                     </div>
-
                     <div id="tiers-only-fields" class="form-grid full" style="gap: 1rem;">
                         <div class="form-group">
                             <label>Contact Principal *</label>
@@ -366,7 +349,6 @@
                         </div>
                     </div>
                 </div>
-
                 <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:10px;">
                     <button type="button" class="btn" style="background:#94a3b8;" onclick="closeModal('formModal')">Annuler</button>
                     <button type="submit" class="btn">Enregistrer</button>
@@ -386,7 +368,7 @@
             <div class="form-grid no-print" style="margin-bottom: 20px;">
                 <input type="hidden" id="editVenteId">
                 <div class="form-group full">
-                    <label>Sélectionner le Client / Fournisseur *</label>
+                    <label>Sélectionner le Client *</label>
                     <select id="saleClientSelect" onchange="checkCreditAvailability()"></select>
                     <div id="plafondRemainingInfo" class="plafond-info" style="display:none;"></div>
                 </div>
@@ -415,7 +397,6 @@
                         <span style="font-size: 0.85rem; font-weight: 600;">Appliquer la TVA (18%)</span>
                     </div>
                 </div>
-                <!-- Code administrateur si modification -->
                 <div id="adminCodeSection" class="form-group full" style="display:none; margin-top:10px; padding:10px; background:#fff7ed; border-radius:10px;">
                     <label style="color:#c2410c;">Code Administrateur requis pour valider les modifications *</label>
                     <input type="password" id="adminCodeInput" placeholder="Entrez le code">
@@ -441,13 +422,11 @@
                         <em>Sélectionnez un client...</em>
                     </div>
                 </div>
-
                 <div style="margin: 20px 0;">
                     <h3 style="text-decoration: underline; margin-bottom: 5px;">FACTURE N° <span id="factureNumber">---</span></h3>
                     <p><strong>Mode de règlement :</strong> <span id="factureModeDisplay">---</span></p>
                     <p><strong>Date de livraison souhaitée :</strong> <span id="factureDateDisplay">---</span></p>
                 </div>
-
                 <table class="facture-table">
                     <thead>
                         <tr>
@@ -462,16 +441,13 @@
                     </thead>
                     <tbody id="factureTableBody"></tbody>
                 </table>
-
                 <div class="facture-totals" id="factureTotalsDisplay"></div>
-
                 <div style="margin-top: 40px; border-top: 1px solid #eee; padding-top: 20px;">
                     <p id="factureInWords" style="font-weight: bold; margin-bottom: 15px;"></p>
                     <p>Vous disposez d’une franchise de 30 jours pour régler cette aventure.</p>
                     <p style="margin-top: 15px; font-weight: 600;">Merci pour la confiance et à très bientôt !</p>
                 </div>
             </div>
-
             <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:10px;" class="no-print">
                 <button type="button" class="btn" style="background:#94a3b8;" onclick="closeModal('saleModal')">Annuler</button>
                 <button type="button" class="btn" id="btnSavePrint" style="background-color: #ff4500;" onclick="saveAndPrint()">Enregistrer et Imprimer</button>
@@ -483,20 +459,33 @@
     <div class="modal-overlay" id="payModal">
         <div class="modal-content" style="max-width:400px;">
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
-                <h2>Règlement</h2>
+                <h2>Nouveau Règlement</h2>
                 <button onclick="closeModal('payModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
             </div>
             <div class="form-grid" style="grid-template-columns: 1fr;">
                 <div class="form-group">
+                    <label>N° Règlement (Auto)</label>
+                    <input type="text" id="payNum" readonly>
+                </div>
+                <div class="form-group">
                     <label>Reste à payer (FCFA)</label>
                     <input type="text" id="payReste" readonly>
+                </div>
+                <div class="form-group">
+                    <label>Mode de Règlement *</label>
+                    <select id="payMode">
+                        <option value="Cash">Cash</option>
+                        <option value="Mobile Money">Mobile Money</option>
+                        <option value="Chèque">Chèque</option>
+                        <option value="Virement">Virement</option>
+                    </select>
                 </div>
                 <div class="form-group">
                     <label>Montant du versement *</label>
                     <input type="number" id="payAmount" min="1">
                 </div>
                 <div class="form-group">
-                    <label>Code de Règlement (Preuve) *</label>
+                    <label>Référence / Preuve *</label>
                     <input type="text" id="payProof" placeholder="EX: REF-MM-12345">
                 </div>
                 <div style="margin-top:1rem;">
@@ -537,54 +526,31 @@
             currentView = view;
             document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
             document.getElementById(`tab-${view}`).classList.add('active');
-            
             const btnLabel = document.getElementById('btn-label');
             const grid = document.getElementById('mainGrid');
             const dynamicButtons = document.getElementById('dynamic-buttons');
-
+            
             if (view === 'VENTE') {
-                dynamicButtons.innerHTML = `
-                    <button class="btn" onclick="openSaleForm()">
-                        <i data-lucide="receipt"></i> FACTURE
-                    </button>
-                `;
+                dynamicButtons.innerHTML = `<button class="btn" onclick="openSaleForm()"><i data-lucide="receipt"></i> FACTURE</button>`;
             } else {
                 if(btnLabel) btnLabel.textContent = view.toLowerCase();
                 dynamicButtons.innerHTML = `
-                    <button class="btn" onclick="exportData()">
-                        <i data-lucide="download"></i> Exporter CSV
-                    </button>
-                    <button class="btn" onclick="openAddForm()">
-                        <i data-lucide="plus-circle"></i> Nouveau <span id="btn-label">${view.toLowerCase()}</span>
-                    </button>
+                    <button class="btn" onclick="exportData()"><i data-lucide="download"></i> Exporter CSV</button>
+                    <button class="btn" onclick="openAddForm()"><i data-lucide="plus-circle"></i> Nouveau <span id="btn-label">${view.toLowerCase()}</span></button>
                 `;
             }
-            
-            if(view === 'ARTICLE') grid.classList.add('grid-articles');
-            else grid.classList.remove('grid-articles');
-
+            if(view === 'ARTICLE') grid.classList.add('grid-articles'); else grid.classList.remove('grid-articles');
             render();
         }
 
         // --- RENDER ---
         function render(data = db[currentView]) {
             const grid = document.getElementById('mainGrid');
-            
-            if (currentView === 'FOURNISSEUR') {
-                grid.innerHTML = `<div class="full" style="text-align:center; padding:4rem; opacity:0.5; grid-column: 1 / -1;">Liste des fournisseurs désactivée.</div>`;
-                return;
-            }
-
-            if (currentView === 'VENTE') {
-                renderVentes(grid, data);
-                return;
-            }
-
+            if (currentView === 'VENTE') { renderVentes(grid, data); return; }
             if (data.length === 0) {
                 grid.innerHTML = `<div class="full" style="text-align:center; padding:4rem; opacity:0.5; grid-column: 1 / -1;">Aucun enregistrement dans ${currentView}.</div>`;
                 return;
             }
-
             if (currentView === 'ARTICLE') {
                 grid.innerHTML = data.map(item => `
                     <div class="card" onclick="editItem('${item.id}')">
@@ -607,6 +573,7 @@
                     </div>
                 `).join('');
             } else {
+                // Rendu Client ET Fournisseur (activé)
                 grid.innerHTML = data.map(item => `
                     <div class="card" onclick="editItem('${item.id}')">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -672,7 +639,6 @@
         // --- FONCTIONS VENTES ---
         function openSaleForm() {
             if(db.ARTICLE.length === 0) return showToast("Veuillez créer des articles d'abord", "#ef4444");
-            
             document.getElementById('editVenteId').value = "";
             document.getElementById('adminCodeSection').style.display = 'none';
             document.getElementById('adminCodeInput').value = "";
@@ -681,11 +647,11 @@
             document.getElementById('factureNumber').textContent = factNum;
             document.getElementById('tvaToggle').checked = false;
             
+            // Sélection des clients UNIQUEMENT pour la facturation
             const clientSel = document.getElementById('saleClientSelect');
-            const combinedList = [...db.CLIENT, ...db.FOURNISSEUR];
-            clientSel.innerHTML = '<option value="">-- Sélectionner un tiers --</option>' + 
-                combinedList.map(c => `<option value="${c.id}">${c.name} (${c.id.startsWith('CL') ? 'Client' : 'Fournisseur'})</option>`).join('');
-
+            clientSel.innerHTML = '<option value="">-- Sélectionner un client --</option>' + 
+                db.CLIENT.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
+            
             const linesContainer = document.getElementById('saleLines');
             linesContainer.innerHTML = '';
             for(let i=1; i<=5; i++) {
@@ -705,7 +671,6 @@
                     </div>
                 `;
             }
-
             document.getElementById('plafondRemainingInfo').style.display = 'none';
             document.getElementById('creditAlert').style.display = 'none';
             updateFacture();
@@ -714,15 +679,11 @@
 
         function editSale(id) {
             const v = db.VENTE.find(x => x.id === id);
-            
             v.items.forEach(soldItem => {
                 const article = db.ARTICLE.find(a => a.id === soldItem.id);
-                if (article) {
-                    article.stock += soldItem.qty;
-                }
+                if (article) article.stock += soldItem.qty;
             });
             saveData();
-
             openSaleForm();
             document.getElementById('editVenteId').value = v.id;
             document.getElementById('factureNumber').textContent = v.num;
@@ -731,14 +692,12 @@
             document.getElementById('saleDate').value = v.date;
             document.getElementById('tvaToggle').checked = v.tvaEnabled;
             document.getElementById('adminCodeSection').style.display = 'block';
-
             v.items.forEach((item, index) => {
                 const i = index + 1;
                 document.getElementById(`lineArt_${i}`).value = item.id;
                 document.getElementById(`lineQty_${i}`).value = item.qty;
                 document.getElementById(`lineRem_${i}`).value = item.rem;
             });
-
             checkCreditAvailability();
             updateFacture();
             render();
@@ -750,41 +709,27 @@
             const alertBox = document.getElementById('creditAlert');
             const alertText = document.getElementById('creditAlertText');
             const plafondInfo = document.getElementById('plafondRemainingInfo');
-
             if (!cid) {
-                plafondInfo.style.display = 'none';
-                alertBox.style.display = 'none';
-                globalPlafondValid = true;
-                updateFacture();
-                return;
+                plafondInfo.style.display = 'none'; alertBox.style.display = 'none';
+                globalPlafondValid = true; updateFacture(); return;
             }
+            const tiers = db.CLIENT.find(c => c.id === cid);
+            if (!tiers) return;
 
-            const tiers = [...db.CLIENT, ...db.FOURNISSEUR].find(c => c.id === cid);
-            
-            if (mode === 'Crédit' && tiers.id.startsWith('CL') && tiers.status === 'Occasionnel') {
-                alertBox.style.display = 'block';
-                alertText.textContent = "PRESTATION À CRÉDIT INTERDITE POUR LES CLIENTS OCCASIONNELS";
-                globalPlafondValid = false;
-                updateFacture();
-                return;
+            if (mode === 'Crédit' && tiers.status === 'Occasionnel') {
+                alertBox.style.display = 'block'; alertText.textContent = "PRESTATION À CRÉDIT INTERDITE POUR LES CLIENTS OCCASIONNELS";
+                globalPlafondValid = false; updateFacture(); return;
             }
-
             const totalImpayes = db.VENTE.filter(v => v.clientId === cid).reduce((sum, v) => sum + v.reste, 0);
             const ttcEncours = calculateTTC();
             const plafondTotal = parseFloat(tiers.limit) || 0;
             const restePlafond = Math.max(0, plafondTotal - totalImpayes);
-
             plafondInfo.innerHTML = `Plafond restant : ${Math.round(restePlafond).toLocaleString()} FCFA / ${Math.round(plafondTotal).toLocaleString()} FCFA`;
             plafondInfo.style.display = 'block';
-
             if (mode === 'Crédit' && (totalImpayes + ttcEncours) > plafondTotal) {
-                alertBox.style.display = 'block';
-                alertText.textContent = "COMMANDE IMPOSSIBLE : PLAFOND FINANCIER DÉPASSÉ";
+                alertBox.style.display = 'block'; alertText.textContent = "COMMANDE IMPOSSIBLE : PLAFOND FINANCIER DÉPASSÉ";
                 globalPlafondValid = false;
-            } else {
-                alertBox.style.display = 'none';
-                globalPlafondValid = true;
-            }
+            } else { alertBox.style.display = 'none'; globalPlafondValid = true; }
             updateFacture();
         }
 
@@ -814,11 +759,9 @@
             const btnSave = document.getElementById('btnSavePrint');
             const modeDisplay = document.getElementById('factureModeDisplay');
             const dateDisplay = document.getElementById('factureDateDisplay');
-
             dateDisplay.textContent = sDate || '---';
-
             if (cid) {
-                const c = [...db.CLIENT, ...db.FOURNISSEUR].find(x => x.id === cid);
+                const c = db.CLIENT.find(x => x.id === cid);
                 clientBox.innerHTML = `
                     <h4 style="margin-bottom:5px;">DESTINATAIRE :</h4>
                     <p><strong>${c.name}</strong></p>
@@ -827,183 +770,107 @@
                     <p>${c.address}</p>
                     <p>Statut : <strong>${c.status || 'N/A'}</strong></p>
                 `;
-            } else {
-                clientBox.innerHTML = '<em>Sélectionnez un client...</em>';
-            }
-
+            } else clientBox.innerHTML = '<em>Sélectionnez un client...</em>';
             let badgeClass = 'mode-badge ';
             if(mode === 'Cash') badgeClass += 'mode-cash';
             else if(mode === 'Mobile Money') badgeClass += 'mode-mm';
             else badgeClass += 'mode-credit';
-
             modeDisplay.innerHTML = `<span class="${badgeClass}">${mode}</span>`;
-
             tbody.innerHTML = '';
-            let totalBrut = 0;
-            let totalRemise = 0;
-            let count = 0;
-            globalStockValid = true;
-
+            let totalBrut = 0; let totalRemise = 0; let count = 0; globalStockValid = true;
             for(let i=1; i<=5; i++) {
                 const aid = document.getElementById(`lineArt_${i}`).value;
                 const qtyInput = document.getElementById(`lineQty_${i}`);
                 const warning = document.getElementById(`stockWarning_${i}`);
                 const qty = parseFloat(qtyInput.value) || 0;
                 const rem = parseFloat(document.getElementById(`lineRem_${i}`).value) || 0;
-
                 if(aid) {
                     const art = db.ARTICLE.find(a => a.id === aid);
                     if(qty > art.stock) {
-                        qtyInput.classList.add('stock-error');
-                        warning.style.display = 'block';
-                        warning.textContent = `Stock insuffisant (${art.stock} max)`;
-                        globalStockValid = false;
-                    } else {
-                        qtyInput.classList.remove('stock-error');
-                        warning.style.display = 'none';
-                    }
-
+                        qtyInput.classList.add('stock-error'); warning.style.display = 'block';
+                        warning.textContent = `Stock insuffisant (${art.stock} max)`; globalStockValid = false;
+                    } else { qtyInput.classList.remove('stock-error'); warning.style.display = 'none'; }
                     if(qty > 0) {
-                        count++;
-                        const valBrut = art.price * qty;
-                        const valRem = valBrut * (rem/100);
-                        const valNet = valBrut - valRem;
-                        totalBrut += valBrut;
-                        totalRemise += valRem;
-
-                        tbody.innerHTML += `
-                            <tr>
-                                <td>${count}</td>
-                                <td>${art.id}</td>
-                                <td>${art.name}</td>
-                                <td>${qty}</td>
-                                <td>${Math.round(art.price).toLocaleString()}</td>
-                                <td>${rem}%</td>
-                                <td>${Math.round(valNet).toLocaleString()}</td>
-                            </tr>
-                        `;
+                        count++; const valBrut = art.price * qty; const valRem = valBrut * (rem/100);
+                        const valNet = valBrut - valRem; totalBrut += valBrut; totalRemise += valRem;
+                        tbody.innerHTML += `<tr><td>${count}</td><td>${art.id}</td><td>${art.name}</td><td>${qty}</td><td>${Math.round(art.price).toLocaleString()}</td><td>${rem}%</td><td>${Math.round(valNet).toLocaleString()}</td></tr>`;
                     }
-                } else {
-                    qtyInput.classList.remove('stock-error');
-                    warning.style.display = 'none';
-                }
+                } else { qtyInput.classList.remove('stock-error'); warning.style.display = 'none'; }
             }
-
             btnSave.disabled = (!globalStockValid || !globalPlafondValid || !cid || count === 0);
-
             const netHT = totalBrut - totalRemise;
             const tva = useTVA ? (netHT * 0.18) : 0;
             const ttc = Math.round(netHT + tva);
-
             totalsBox.innerHTML = `
                 <div><span>Total Brut HT:</span> <span>${Math.round(totalBrut).toLocaleString()} FCFA</span></div>
                 <div><span>Montant Remise:</span> <span>${Math.round(totalRemise).toLocaleString()} FCFA</span></div>
                 <div><span>Somme HT:</span> <span>${Math.round(netHT).toLocaleString()} FCFA</span></div>
                 <div><span>Montant TVA (${useTVA ? '18%' : 'Exonéré'}):</span> <span>${Math.round(tva).toLocaleString()} FCFA</span></div>
-                <div style="font-weight:bold; font-size:1.1rem; border-top:2px solid #000; margin-top:5px;">
-                    <span>TOTAL TTC:</span> <span>${ttc.toLocaleString()} FCFA</span>
-                </div>
+                <div style="font-weight:bold; font-size:1.1rem; border-top:2px solid #000; margin-top:5px;"><span>TOTAL TTC:</span> <span>${ttc.toLocaleString()} FCFA</span></div>
             `;
-
             document.getElementById('factureInWords').textContent = `Votre facture est de ${ttc.toLocaleString()} Francs CFA.`;
         }
 
         function saveAndPrint() {
             const editId = document.getElementById('editVenteId').value;
-            
             if (editId) {
                 const code = document.getElementById('adminCodeInput').value;
-                if (code !== ADMIN_CODE) {
-                    return showToast("Code administrateur incorrect", "#ef4444");
-                }
+                if (code !== ADMIN_CODE) return showToast("Code administrateur incorrect", "#ef4444");
             }
-
             if(!globalStockValid) return showToast("Certains articles dépassent le stock disponible", "#ef4444");
             if(!globalPlafondValid) return showToast("Action bloquée : Vérifiez les plafonds ou le statut client", "#ef4444");
-
             const cid = document.getElementById('saleClientSelect').value;
             const factNum = document.getElementById('factureNumber').textContent;
             const useTVA = document.getElementById('tvaToggle').checked;
             const items = [];
-
-            let totalBrut = 0;
-            let totalRemise = 0;
-
+            let totalBrut = 0; let totalRemise = 0;
             for(let i=1; i<=5; i++) {
                 const aid = document.getElementById(`lineArt_${i}`).value;
                 const qty = parseFloat(document.getElementById(`lineQty_${i}`).value) || 0;
                 const rem = parseFloat(document.getElementById(`lineRem_${i}`).value) || 0;
                 if(aid && qty > 0) {
                     const art = db.ARTICLE.find(a => a.id === aid);
-                    const valBrut = art.price * qty;
-                    const valRem = valBrut * (rem/100);
-                    
-                    totalBrut += valBrut;
-                    totalRemise += valRem;
-
-                    items.push({ 
-                        id: aid, 
-                        name: art.name, 
-                        qty: qty, 
-                        price: art.price, 
-                        rem: rem 
-                    });
+                    totalBrut += art.price * qty; totalRemise += (art.price * qty) * (rem/100);
+                    items.push({ id: aid, name: art.name, qty: qty, price: art.price, rem: rem });
                     art.stock -= qty;
                 }
             }
-
             if(!cid || items.length === 0) return showToast("Données incomplètes", "#ef4444");
-
             const netHT = totalBrut - totalRemise;
             const tva = useTVA ? (netHT * 0.18) : 0;
             const ttc = Math.round(netHT + tva);
-            
-            const tiers = [...db.CLIENT, ...db.FOURNISSEUR].find(c => c.id === cid);
-            
+            const tiers = db.CLIENT.find(c => c.id === cid);
             const saleData = {
-                num: factNum,
-                creationDate: new Date().toLocaleDateString('fr-FR'),
-                date: document.getElementById('saleDate').value,
-                clientId: cid,
-                clientName: tiers.name,
-                clientStatus: tiers.status,
-                brutHT: totalBrut,
-                remiseTotal: totalRemise,
-                netHT: netHT,
-                tvaAmount: tva,
-                ttc: ttc,
-                reste: ttc,
+                num: factNum, creationDate: new Date().toLocaleDateString('fr-FR'),
+                date: document.getElementById('saleDate').value, clientId: cid,
+                clientName: tiers.name, clientStatus: tiers.status,
+                brutHT: totalBrut, remiseTotal: totalRemise, netHT: netHT,
+                tvaAmount: tva, ttc: ttc, reste: ttc,
                 mode: document.getElementById('salePaymentMode').value,
-                tvaEnabled: useTVA,
-                items: items,
+                tvaEnabled: useTVA, items: items,
                 payments: editId ? db.VENTE.find(v => v.id === editId).payments : []
             };
-
             const totalPaid = saleData.payments.reduce((s, p) => s + p.amount, 0);
             saleData.reste = Math.max(0, ttc - totalPaid);
-
             if (editId) {
                 const idx = db.VENTE.findIndex(v => v.id === editId);
                 db.VENTE[idx] = { ...db.VENTE[idx], ...saleData };
-            } else {
-                db.VENTE.push({ id: 'VTE-' + Date.now(), ...saleData });
-            }
-
+            } else db.VENTE.push({ id: 'VTE-' + Date.now(), ...saleData });
             saveData();
-            
-            const originalTitle = document.title;
-            document.title = factNum;
-            window.print();
-            document.title = originalTitle;
-
-            closeModal('saleModal');
-            switchView('VENTE');
-            showToast(editId ? "Vente modifiée" : "Vente enregistrée");
+            const originalTitle = document.title; document.title = factNum; window.print(); document.title = originalTitle;
+            closeModal('saleModal'); switchView('VENTE'); showToast(editId ? "Vente modifiée" : "Vente enregistrée");
         }
 
         // --- GESTION REGLEMENTS ---
+        function getNextReglementNumber() {
+            let total = 0;
+            db.VENTE.forEach(v => { total += (v.payments ? v.payments.length : 0); });
+            return 'R-' + String(total + 1).padStart(4, '0');
+        }
+
         function openPayModal(id) {
             currentPayingVente = db.VENTE.find(v => v.id === id);
+            document.getElementById('payNum').value = getNextReglementNumber();
             document.getElementById('payReste').value = Math.round(currentPayingVente.reste).toLocaleString();
             document.getElementById('payAmount').value = Math.round(currentPayingVente.reste);
             document.getElementById('payProof').value = "";
@@ -1013,14 +880,20 @@
         function executePayment() {
             const amount = Math.round(parseFloat(document.getElementById('payAmount').value));
             const proof = document.getElementById('payProof').value.trim();
+            const mode = document.getElementById('payMode').value;
+            const numReg = document.getElementById('payNum').value;
 
             if(!amount || amount <= 0 || !proof) return showToast("Champs obligatoires manquants", "#ef4444");
             if(amount > currentPayingVente.reste) return showToast("Montant excessif", "#ef4444");
 
+            if (!currentPayingVente.payments) currentPayingVente.payments = [];
+            
             currentPayingVente.reste -= amount;
             currentPayingVente.payments.push({
+                num: numReg,
                 date: new Date().toLocaleDateString('fr-FR'),
                 amount: amount,
+                mode: mode,
                 proof: proof
             });
 
@@ -1033,14 +906,10 @@
         function showVenteDetails(id) {
             const v = db.VENTE.find(x => x.id === id);
             const content = document.getElementById('venteDetailsContent');
-
-            const totalPaye = v.payments.reduce((s, p) => s + p.amount, 0);
-            const dateLivraisonFinale = v.reste <= 0 ? (v.payments.length ? v.payments[v.payments.length - 1].date : 'N/A') : 'En attente';
-
+            const totalPaye = (v.payments || []).reduce((s, p) => s + p.amount, 0);
+            const dateLivraisonFinale = v.reste <= 0 ? (v.payments && v.payments.length ? v.payments[v.payments.length - 1].date : 'N/A') : 'En attente';
             let badgeClass = 'mode-badge ';
-            if(v.mode === 'Cash') badgeClass += 'mode-cash';
-            else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm';
-            else badgeClass += 'mode-credit';
+            if(v.mode === 'Cash') badgeClass += 'mode-cash'; else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm'; else badgeClass += 'mode-credit';
 
             content.innerHTML = `
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
@@ -1050,164 +919,68 @@
                     </div>
                     <button onclick="closeModal('venteDetailsModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
                 </div>
-
                 <div class="form-grid">
-                    <!-- SECTION GÉNÉRALE -->
                     <div class="details-section" style="margin-top:0;">
                         <div class="details-title">Information Document</div>
-                        <div class="details-item">
-                            <span class="details-label">N° Facture</span>
-                            <span class="details-value">${v.num}</span>
-                        </div>
-                        <div class="details-item">
-                            <span class="details-label">Date Commande</span>
-                            <span class="details-value">${v.creationDate || v.date}</span>
-                        </div>
-                        <div class="details-item">
-                            <span class="details-label">Date Livraison Souhaitée</span>
-                            <span class="details-value">${v.date}</span>
-                        </div>
-                        <div class="details-item">
-                            <span class="details-label">Date de Livraison Effective</span>
-                            <span class="details-value" style="color:${v.reste <= 0 ? '#16a34a' : '#f97316'}">${dateLivraisonFinale}</span>
-                        </div>
-                        <div class="details-item">
-                            <span class="details-label">Mode de Règlement</span>
-                            <span class="details-value"><span class="${badgeClass}">${v.mode}</span></span>
-                        </div>
+                        <div class="details-item"><span class="details-label">N° Facture</span><span class="details-value">${v.num}</span></div>
+                        <div class="details-item"><span class="details-label">Date Commande</span><span class="details-value">${v.creationDate || v.date}</span></div>
+                        <div class="details-item"><span class="details-label">Date Livraison Souhaitée</span><span class="details-value">${v.date}</span></div>
+                        <div class="details-item"><span class="details-label">Date de Livraison Effective</span><span class="details-value" style="color:${v.reste <= 0 ? '#16a34a' : '#f97316'}">${dateLivraisonFinale}</span></div>
+                        <div class="details-item"><span class="details-label">Mode de Règlement Global</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
                     </div>
-
-                    <!-- SECTION CLIENT -->
                     <div class="details-section" style="margin-top:0;">
                         <div class="details-title">Information Tiers</div>
-                        <div class="details-item">
-                            <span class="details-label">Client / Fournisseur</span>
-                            <span class="details-value">${v.clientName}</span>
-                        </div>
-                        <div class="details-item">
-                            <span class="details-label">Statut Client</span>
-                            <span class="details-value">
-                                <span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span>
-                            </span>
-                        </div>
+                        <div class="details-item"><span class="details-label">Client</span><span class="details-value">${v.clientName}</span></div>
+                        <div class="details-item"><span class="details-label">Statut Client</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
                     </div>
-
-                    <!-- SECTION FINANCIÈRE -->
                     <div class="details-section full">
                         <div class="details-title">Récapitulatif Financier</div>
                         <div class="details-grid">
                             <div>
-                                <div class="details-item">
-                                    <span class="details-label">Total HT Brut</span>
-                                    <span class="details-value">${Math.round(v.brutHT || v.ttc).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item">
-                                    <span class="details-label">Remise Totale</span>
-                                    <span class="details-value" style="color:#dc2626">-${Math.round(v.remiseTotal || 0).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item">
-                                    <span class="details-label">Montant Net HT</span>
-                                    <span class="details-value">${Math.round(v.netHT || v.ttc).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item">
-                                    <span class="details-label">TVA (18%)</span>
-                                    <span class="details-value">${Math.round(v.tvaAmount || 0).toLocaleString()} FCFA</span>
-                                </div>
+                                <div class="details-item"><span class="details-label">Total HT Brut</span><span class="details-value">${Math.round(v.brutHT || v.ttc).toLocaleString()} FCFA</span></div>
+                                <div class="details-item"><span class="details-label">Remise Totale</span><span class="details-value" style="color:#dc2626">-${Math.round(v.remiseTotal || 0).toLocaleString()} FCFA</span></div>
+                                <div class="details-item"><span class="details-label">Montant Net HT</span><span class="details-value">${Math.round(v.netHT || v.ttc).toLocaleString()} FCFA</span></div>
+                                <div class="details-item"><span class="details-label">TVA (18%)</span><span class="details-value">${Math.round(v.tvaAmount || 0).toLocaleString()} FCFA</span></div>
                             </div>
                             <div style="background:#f1f5f9; padding:10px; border-radius:8px;">
-                                <div class="details-item">
-                                    <span class="details-label" style="font-weight:bold; color:#1e293b">MONTANT TTC</span>
-                                    <span class="details-value" style="font-size:1.1rem; color:var(--nav-bg)">${Math.round(v.ttc).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item">
-                                    <span class="details-label">Montant Déjà Payé</span>
-                                    <span class="details-value" style="color:#16a34a">${Math.round(totalPaye).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item" style="border-top:1px solid #cbd5e1; margin-top:5px; padding-top:5px;">
-                                    <span class="details-label" style="font-weight:bold; color:#dc2626">RESTE À PAYER</span>
-                                    <span class="details-value" style="font-size:1.1rem; color:#dc2626">${Math.round(v.reste).toLocaleString()} FCFA</span>
-                                </div>
-                                <div class="details-item">
-                                    <span class="details-label">Nombre de Règlements</span>
-                                    <span class="details-value">${v.payments.length} versement(s)</span>
-                                </div>
+                                <div class="details-item"><span class="details-label" style="font-weight:bold; color:#1e293b">MONTANT TTC</span><span class="details-value" style="font-size:1.1rem; color:var(--nav-bg)">${Math.round(v.ttc).toLocaleString()} FCFA</span></div>
+                                <div class="details-item"><span class="details-label">Montant Déjà Payé</span><span class="details-value" style="color:#16a34a">${Math.round(totalPaye).toLocaleString()} FCFA</span></div>
+                                <div class="details-item" style="border-top:1px solid #cbd5e1; margin-top:5px; padding-top:5px;"><span class="details-label" style="font-weight:bold; color:#dc2626">RESTE À PAYER</span><span class="details-value" style="font-size:1.1rem; color:#dc2626">${Math.round(v.reste).toLocaleString()} FCFA</span></div>
+                                <div class="details-item"><span class="details-label">Nombre de Règlements</span><span class="details-value">${v.payments ? v.payments.length : 0} versement(s)</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
-
-                <!-- SECTION ARTICLES -->
                 <div class="details-section">
                     <div class="details-title">Articles et Quantités Commandées</div>
                     <table style="margin-top:10px;">
-                        <thead>
-                            <tr>
-                                <th>Désignation</th>
-                                <th style="text-align:center">Quantité</th>
-                                <th style="text-align:right">P.U</th>
-                                <th style="text-align:right">Remise</th>
-                                <th style="text-align:right">Total Ligne</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${v.items.map(i => `
-                                <tr>
-                                    <td>${i.name}</td>
-                                    <td style="text-align:center"><strong>${i.qty}</strong></td>
-                                    <td style="text-align:right">${Math.round(i.price).toLocaleString()}</td>
-                                    <td style="text-align:right">${i.rem}%</td>
-                                    <td style="text-align:right; font-weight:600;">${Math.round(i.qty * i.price * (1-i.rem/100)).toLocaleString()} FCFA</td>
-                                </tr>
-                            `).join('')}
-                        </tbody>
+                        <thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">P.U</th><th style="text-align:right">Remise</th><th style="text-align:right">Total Ligne</th></tr></thead>
+                        <tbody>${v.items.map(i => `<tr><td>${i.name}</td><td style="text-align:center"><strong>${i.qty}</strong></td><td style="text-align:right">${Math.round(i.price).toLocaleString()}</td><td style="text-align:right">${i.rem}%</td><td style="text-align:right; font-weight:600;">${Math.round(i.qty * i.price * (1-i.rem/100)).toLocaleString()} FCFA</td></tr>`).join('')}</tbody>
                     </table>
                 </div>
-
-                <!-- HISTORIQUE DES VERSEMENTS -->
                 <div class="details-section">
                     <div class="details-title">Historique des Règlements</div>
                     <table style="margin-top:10px;">
-                        <thead>
-                            <tr>
-                                <th>Date</th>
-                                <th>Montant Versé</th>
-                                <th>Référence / Preuve</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            ${v.payments.length ? v.payments.map(p => `
-                                <tr>
-                                    <td>${p.date}</td>
-                                    <td style="font-weight:600; color:#16a34a">${Math.round(p.amount).toLocaleString()} FCFA</td>
-                                    <td>${p.proof}</td>
-                                </tr>
-                            `).join('') : '<tr><td colspan="3" style="text-align:center; padding:10px; opacity:0.5;">Aucun règlement effectué pour le moment.</td></tr>'}
-                        </tbody>
+                        <thead><tr><th>N° Règl.</th><th>Date</th><th>Mode</th><th>Montant Versé</th><th>Preuve</th></tr></thead>
+                        <tbody>${v.payments && v.payments.length ? v.payments.map(p => `<tr><td><strong>${p.num || '---'}</strong></td><td>${p.date}</td><td>${p.mode || '---'}</td><td style="font-weight:600; color:#16a34a">${Math.round(p.amount).toLocaleString()} FCFA</td><td>${p.proof}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:10px; opacity:0.5;">Aucun règlement effectué pour le moment.</td></tr>'}</tbody>
                     </table>
                 </div>
             `;
-            openModal('venteDetailsModal');
-            lucide.createIcons();
+            openModal('venteDetailsModal'); lucide.createIcons();
         }
 
         // --- GESTION ADMINISTRATIVE ---
         function updateSelects() {
-            const famSel = document.getElementById('artFamily');
-            const subSel = document.getElementById('artSubFamily');
+            const famSel = document.getElementById('artFamily'); const subSel = document.getElementById('artSubFamily');
             if(famSel) famSel.innerHTML = families.map(f => `<option value="${f}">${f}</option>`).join('');
             if(subSel) subSel.innerHTML = subfamilies.map(s => `<option value="${s}">${s}</option>`).join('');
         }
 
         function addListOption(selId, inpId, storageKey) {
-            const val = document.getElementById(inpId).value.trim();
-            if(!val) return;
-            if(storageKey === 'families') families.push(val);
-            else subfamilies.push(val);
-            
+            const val = document.getElementById(inpId).value.trim(); if(!val) return;
+            if(storageKey === 'families') families.push(val); else subfamilies.push(val);
             localStorage.setItem(`crm_${storageKey}`, JSON.stringify(storageKey === 'families' ? families : subfamilies));
-            document.getElementById(inpId).value = "";
-            updateSelects();
-            showToast("Liste mise à jour");
+            document.getElementById(inpId).value = ""; updateSelects(); showToast("Liste mise à jour");
         }
 
         function calculateArticleValues() {
@@ -1230,157 +1003,84 @@
         }
 
         function openAddForm() {
-            document.getElementById('mainForm').reset();
-            document.getElementById('editId').value = "";
+            document.getElementById('mainForm').reset(); document.getElementById('editId').value = "";
             document.getElementById('modalTitle').textContent = `Nouveau ${currentView.toLowerCase()}`;
-            document.getElementById('photoPreview').style.display = 'none';
-            document.getElementById('artPhotoData').value = "";
-            
-            const nameLabel = document.getElementById('formNameLabel');
-            const tiersFields = document.getElementById('tiers-only-fields');
-            const articleFields = document.getElementById('extra-article-fields');
-
+            document.getElementById('photoPreview').style.display = 'none'; document.getElementById('artPhotoData').value = "";
+            const nameLabel = document.getElementById('formNameLabel'); const tiersFields = document.getElementById('tiers-only-fields'); const articleFields = document.getElementById('extra-article-fields');
             if(currentView === 'ARTICLE') {
-                nameLabel.textContent = "Désignation de l'Article *";
-                tiersFields.style.display = 'none';
-                articleFields.style.display = 'grid';
-                updateSelects();
-            } else {
-                nameLabel.textContent = "Nom Complet / Raison Sociale *";
-                tiersFields.style.display = 'grid';
-                articleFields.style.display = 'none';
-                toggleLimitField();
-            }
+                nameLabel.textContent = "Désignation de l'Article *"; tiersFields.style.display = 'none'; articleFields.style.display = 'grid'; updateSelects();
+            } else { nameLabel.textContent = "Nom Complet / Raison Sociale *"; tiersFields.style.display = 'grid'; articleFields.style.display = 'none'; toggleLimitField(); }
             openModal('formModal');
         }
 
         function editItem(id) {
             const item = db[currentView].find(i => i.id === id);
-            openAddForm();
-            document.getElementById('editId').value = item.id;
-            document.getElementById('formName').value = item.name;
-
+            openAddForm(); document.getElementById('editId').value = item.id; document.getElementById('formName').value = item.name;
             if(currentView === 'ARTICLE') {
-                document.getElementById('artFamily').value = item.family;
-                document.getElementById('artSubFamily').value = item.subfamily;
-                document.getElementById('artPrice').value = item.price;
-                document.getElementById('artStock').value = item.stock;
+                document.getElementById('artFamily').value = item.family; document.getElementById('artSubFamily').value = item.subfamily;
+                document.getElementById('artPrice').value = item.price; document.getElementById('artStock').value = item.stock;
                 document.getElementById('artPhotoData').value = item.photo || "";
-                if(item.photo) {
-                    document.getElementById('previewImg').src = item.photo;
-                    document.getElementById('photoPreview').style.display = 'block';
-                }
+                if(item.photo) { document.getElementById('previewImg').src = item.photo; document.getElementById('photoPreview').style.display = 'block'; }
                 calculateArticleValues();
             } else {
-                document.getElementById('formPhone1').value = item.phone1;
-                document.getElementById('formPhone2').value = item.phone2;
-                document.getElementById('formAddress').value = item.address;
-                document.getElementById('formStatus').value = item.status;
-                document.getElementById('formLimit').value = item.limit;
-                document.getElementById('formEmail').value = item.email;
-                toggleLimitField();
+                document.getElementById('formPhone1').value = item.phone1; document.getElementById('formPhone2').value = item.phone2;
+                document.getElementById('formAddress').value = item.address; document.getElementById('formStatus').value = item.status;
+                document.getElementById('formLimit').value = item.limit; document.getElementById('formEmail').value = item.email; toggleLimitField();
             }
         }
 
         function handleSubmit(e) {
-            e.preventDefault();
-            const editId = document.getElementById('editId').value;
-            let payload = {
-                name: document.getElementById('formName').value.trim()
-            };
-
+            e.preventDefault(); const editId = document.getElementById('editId').value;
+            let payload = { name: document.getElementById('formName').value.trim() };
             if(currentView === 'ARTICLE') {
-                payload = { ...payload,
-                    family: document.getElementById('artFamily').value,
-                    subfamily: document.getElementById('artSubFamily').value,
-                    price: parseFloat(document.getElementById('artPrice').value) || 0,
-                    stock: parseFloat(document.getElementById('artStock').value) || 0,
-                    photo: document.getElementById('artPhotoData').value
-                };
+                payload = { ...payload, family: document.getElementById('artFamily').value, subfamily: document.getElementById('artSubFamily').value, price: parseFloat(document.getElementById('artPrice').value) || 0, stock: parseFloat(document.getElementById('artStock').value) || 0, photo: document.getElementById('artPhotoData').value };
             } else {
-                payload = { ...payload,
-                    phone1: document.getElementById('formPhone1').value.trim(),
-                    phone2: document.getElementById('formPhone2').value.trim(),
-                    address: document.getElementById('formAddress').value.trim(),
-                    status: document.getElementById('formStatus').value,
-                    limit: parseFloat(document.getElementById('formLimit').value) || 0,
-                    email: document.getElementById('formEmail').value.trim().toLowerCase()
-                };
+                payload = { ...payload, phone1: document.getElementById('formPhone1').value.trim(), phone2: document.getElementById('formPhone2').value.trim(), address: document.getElementById('formAddress').value.trim(), status: document.getElementById('formStatus').value, limit: parseFloat(document.getElementById('formLimit').value) || 0, email: document.getElementById('formEmail').value.trim().toLowerCase() };
             }
-
             const list = db[currentView];
-            if(editId) {
-                const idx = list.findIndex(i => i.id === editId);
-                list[idx] = { ...list[idx], ...payload };
+            if(editId) { const idx = list.findIndex(i => i.id === editId); list[idx] = { ...list[idx], ...payload };
             } else {
                 let prefix = currentView === 'CLIENT' ? 'CL-' : (currentView === 'FOURNISSEUR' ? 'FR-' : 'A-');
-                const newId = prefix + Date.now().toString().slice(-4);
-                list.push({ id: newId, ...payload, date: new Date().toISOString().split('T')[0] });
+                list.push({ id: prefix + Date.now().toString().slice(-4), ...payload, date: new Date().toISOString().split('T')[0] });
             }
-
-            saveData();
-            render();
-            closeModal('formModal');
-            showToast("Sauvegarde réussie");
+            saveData(); render(); closeModal('formModal'); showToast("Sauvegarde réussie");
         }
 
         // --- UTILITAIRES ---
         function toggleTheme() {
-            const b = document.body;
-            b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
+            const b = document.body; b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
             lucide.createIcons();
         }
-
         function saveData() {
             localStorage.setItem('crm_clients', JSON.stringify(db.CLIENT));
             localStorage.setItem('crm_suppliers', JSON.stringify(db.FOURNISSEUR));
             localStorage.setItem('crm_articles', JSON.stringify(db.ARTICLE));
             localStorage.setItem('crm_ventes', JSON.stringify(db.VENTE));
         }
-
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
-        
-        function toggleLimitField() {
-            const f = document.getElementById('formLimit');
-            const s = document.getElementById('formStatus').value;
-            if(f) f.disabled = (s !== 'Abonné');
-        }
-
-        function showToast(msg, color = "#10b981") {
-            const t = document.getElementById('toast');
-            t.textContent = msg; t.style.backgroundColor = color;
-            t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-
+        function toggleLimitField() { const f = document.getElementById('formLimit'); const s = document.getElementById('formStatus').value; if(f) f.disabled = (s !== 'Abonné'); }
         function filterData() {
-            const q = document.getElementById('searchInput').value.toLowerCase();
-            const data = db[currentView];
+            const q = document.getElementById('searchInput').value.toLowerCase(); const data = db[currentView];
             render(data.filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));
         }
-
         function exportData() {
-            const list = db[currentView];
-            if(!list.length) return;
+            const list = db[currentView]; if(!list.length) return;
             let head, body;
             if(currentView === 'ARTICLE') {
-                head = "Code;Designation;Famille;Prix;Stock\n";
-                body = list.map(i => `${i.id};${i.name};${i.family};${i.price};${i.stock}`).join("\n");
+                head = "Code;Designation;Famille;Prix;Stock\n"; body = list.map(i => `${i.id};${i.name};${i.family};${i.price};${i.stock}`).join("\n");
             } else if(currentView === 'VENTE') {
-                head = "Num;Date;Tiers;Total;Reste\n";
-                body = list.map(i => `${i.num};${i.date};${i.clientName};${i.ttc};${i.reste}`).join("\n");
+                head = "Num;Date;Tiers;Total;Reste\n"; body = list.map(i => `${i.num};${i.date};${i.clientName};${i.ttc};${i.reste}`).join("\n");
             } else {
-                head = "Code;Nom;Contact;Adresse;Status\n";
-                body = list.map(i => `${i.id};${i.name};${i.phone1};${i.address};${i.status}`).join("\n");
+                head = "Code;Nom;Contact;Adresse;Status\n"; body = list.map(i => `${i.id};${i.name};${i.phone1};${i.address};${i.status}`).join("\n");
             }
-            const blob = new Blob([head + body], { type: 'text/csv;charset=utf-8;' });
-            const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob);
-            link.download = `Export_${currentView}_${new Date().toISOString().split('T')[0]}.csv`;
-            link.click();
+            const blob = new Blob([head + body], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a");
+            link.href = URL.createObjectURL(blob); link.download = `Export_${currentView}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
         }
-
+        function showToast(msg, color = "#10b981") {
+            const t = document.getElementById('toast'); t.textContent = msg; t.style.backgroundColor = color; t.classList.add('show');
+            setTimeout(() => t.classList.remove('show'), 3000);
+        }
         window.onload = () => { render(); lucide.createIcons(); };
     </script>
 </body>

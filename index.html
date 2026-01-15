@@ -141,7 +141,8 @@
         .status-occasional { background-color: var(--status-occasional); }
         .status-rupture { background-color: var(--status-out-of-stock); }
         .status-delivered { background-color: #10b981; }
-        .status-pending { background-color: #f97316; }
+        .status-partial { background-color: #f97316; }
+        .status-pending { background-color: #94a3b8; }
 
         .card-code { font-size: 0.75rem; color: #64748b; font-weight: 800; }
         .card-name { font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0; }
@@ -516,7 +517,7 @@
         </div>
     </div>
 
-    <!-- Modal Livraison -->
+    <!-- Modal Livraison Progressive -->
     <div class="modal-overlay" id="deliveryModal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
@@ -534,14 +535,14 @@
                     </div>
                 </div>
                 <div class="form-group full">
-                    <label>Date de livraison réelle</label>
+                    <label>Date de ce passage</label>
                     <input type="date" id="deliveryActualDate">
                 </div>
                 <div class="full" id="deliveryItemsList" style="margin-top:10px;">
-                    <!-- Liste des articles avec input pour qtés livrées -->
+                    <!-- Liste dynamique des articles avec reste à livrer -->
                 </div>
                 <div style="margin-top:1rem;" class="full">
-                    <button class="btn btn-success full" style="width:100%; justify-content:center;" onclick="executeDelivery()">Confirmer la livraison</button>
+                    <button class="btn btn-success full" style="width:100%; justify-content:center;" onclick="executeDelivery()">Confirmer ce passage</button>
                 </div>
             </div>
         </div>
@@ -654,8 +655,8 @@
                                 <th>Client</th>
                                 <th>Total TTC</th>
                                 <th>Reste</th>
-                                <th>Statut Paym.</th>
-                                <th>Statut Livraison</th>
+                                <th>Paiement</th>
+                                <th>Livraison</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
@@ -663,7 +664,9 @@
                             ${data.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
                               data.map(v => {
                                 const isSold = v.reste <= 0;
-                                const isDelivered = v.deliveryInfo && v.deliveryInfo.actualDate;
+                                const isFullyDelivered = checkIsFullyDelivered(v);
+                                const isPartiallyDelivered = checkIsPartiallyDelivered(v);
+                                
                                 return `
                                 <tr>
                                     <td><strong>${v.num}</strong></td>
@@ -677,22 +680,30 @@
                                         </span>
                                     </td>
                                     <td>
-                                        <span class="status-badge ${isDelivered ? 'status-delivered' : 'status-pending'}">
-                                            ${isDelivered ? 'Livré' : 'En attente'}
+                                        <span class="status-badge ${isFullyDelivered ? 'status-delivered' : (isPartiallyDelivered ? 'status-partial' : 'status-pending')}">
+                                            ${isFullyDelivered ? 'Livré' : (isPartiallyDelivered ? 'Partiel' : 'En attente')}
                                         </span>
                                     </td>
                                     <td style="display:flex; gap:5px;">
                                         <button class="btn" style="padding:5px 10px; font-size:0.75rem; background: #334155;" onclick="showVenteDetails('${v.id}')">Détails</button>
-                                        ${!isSold ? `
-                                            <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
-                                                <i data-lucide="edit-3" size="14"></i> Modifier
-                                            </button>
-                                            <button class="btn btn-accent" style="padding:5px 10px; font-size:0.75rem;" onclick="openPayModal('${v.id}')">Régler</button>
-                                        ` : (isSold && !isDelivered ? `
-                                            <button class="btn btn-success" style="padding:5px 10px; font-size:0.75rem;" onclick="openDeliveryModal('${v.id}')">
-                                                <i data-lucide="truck" size="14"></i> Livraison
-                                            </button>
-                                        ` : '')}
+                                        
+                                        ${(!isFullyDelivered || !isSold) ? `
+                                            ${(!isSold && !isPartiallyDelivered) ? `
+                                                <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
+                                                    <i data-lucide="edit-3" size="14"></i> Modifier
+                                                </button>
+                                            ` : ''}
+                                            
+                                            ${!isSold ? `
+                                                <button class="btn btn-accent" style="padding:5px 10px; font-size:0.75rem;" onclick="openPayModal('${v.id}')">Régler</button>
+                                            ` : ''}
+
+                                            ${!isFullyDelivered ? `
+                                                <button class="btn btn-success" style="padding:5px 10px; font-size:0.75rem;" onclick="openDeliveryModal('${v.id}')">
+                                                    <i data-lucide="truck" size="14"></i> Livraison
+                                                </button>
+                                            ` : ''}
+                                        ` : ''}
                                     </td>
                                 </tr>
                             `;}).join('')}
@@ -701,6 +712,31 @@
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        // --- HELPERS LIVRAISON ---
+        function checkIsFullyDelivered(vente) {
+            if (!vente.deliveries || vente.deliveries.length === 0) return false;
+            return vente.items.every(item => {
+                const totalDelivered = (vente.deliveries || []).reduce((sum, del) => {
+                    const line = del.items.find(di => di.id === item.id);
+                    return sum + (line ? line.qty : 0);
+                }, 0);
+                return totalDelivered >= item.qty;
+            });
+        }
+
+        function checkIsPartiallyDelivered(vente) {
+            if (!vente.deliveries || vente.deliveries.length === 0) return false;
+            return !checkIsFullyDelivered(vente);
+        }
+
+        function getDeliveredQtyForArticle(vente, articleId) {
+            if (!vente.deliveries) return 0;
+            return vente.deliveries.reduce((sum, del) => {
+                const line = del.items.find(i => i.id === articleId);
+                return sum + (line ? line.qty : 0);
+            }, 0);
         }
 
         // --- FONCTIONS VENTES ---
@@ -745,6 +781,7 @@
 
         function editSale(id) {
             const v = db.VENTE.find(x => x.id === id);
+            // Remise en stock temporaire pour la ré-édition
             v.items.forEach(soldItem => {
                 const article = db.ARTICLE.find(a => a.id === soldItem.id);
                 if (article) article.stock += soldItem.qty;
@@ -914,9 +951,10 @@
                 tvaAmount: tva, ttc: ttc, reste: ttc,
                 mode: document.getElementById('salePaymentMode').value,
                 tvaEnabled: useTVA, items: items,
-                payments: editId ? db.VENTE.find(v => v.id === editId).payments : []
+                payments: editId ? db.VENTE.find(v => v.id === editId).payments : [],
+                deliveries: editId ? db.VENTE.find(v => v.id === editId).deliveries : []
             };
-            const totalPaid = saleData.payments.reduce((s, p) => s + p.amount, 0);
+            const totalPaid = (saleData.payments || []).reduce((s, p) => s + p.amount, 0);
             saleData.reste = Math.max(0, ttc - totalPaid);
             if (editId) {
                 const idx = db.VENTE.findIndex(v => v.id === editId);
@@ -927,7 +965,7 @@
             closeModal('saleModal'); switchView('VENTE'); showToast(editId ? "Vente modifiée" : "Vente enregistrée");
         }
 
-        // --- GESTION LIVRAISON ---
+        // --- GESTION LIVRAISON PROGRESSIVE ---
         function openDeliveryModal(id) {
             const v = db.VENTE.find(x => x.id === id);
             document.getElementById('deliveryVenteId').value = id;
@@ -939,13 +977,18 @@
             
             const itemsList = document.getElementById('deliveryItemsList');
             itemsList.innerHTML = `
-                <div style="font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:10px;">Vérification des Quantités Livrées</div>
-                ${v.items.map((item, idx) => `
-                    <div class="form-grid" style="margin-bottom:8px; align-items:center;">
-                        <span style="font-size:0.85rem;">${item.name} (${item.qty} commandé)</span>
-                        <input type="number" id="delQty_${idx}" value="${item.qty}" min="0" max="${item.qty}">
-                    </div>
-                `).join('')}
+                <div style="font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:10px;">Réception Articles (Passage en cours)</div>
+                ${v.items.map((item, idx) => {
+                    const alreadyDelivered = getDeliveredQtyForArticle(v, item.id);
+                    const remaining = item.qty - alreadyDelivered;
+                    if (remaining <= 0) return ''; // Article déjà entièrement livré
+                    return `
+                        <div class="form-grid" style="margin-bottom:8px; align-items:center;">
+                            <span style="font-size:0.85rem;">${item.name}<br><small style="color:#64748b">Restant: ${remaining}</small></span>
+                            <input type="number" id="delQty_${idx}" value="${remaining}" min="0" max="${remaining}">
+                        </div>
+                    `;
+                }).join('')}
             `;
             openModal('deliveryModal');
         }
@@ -958,23 +1001,30 @@
 
             if(!driver || !date) return showToast("Veuillez remplir tous les champs", "#ef4444");
 
-            const deliveryItems = v.items.map((item, idx) => ({
-                id: item.id,
-                name: item.name,
-                orderedQty: item.qty,
-                deliveredQty: parseFloat(document.getElementById(`delQty_${idx}`).value) || 0
-            }));
+            const deliveryLineItems = [];
+            v.items.forEach((item, idx) => {
+                const input = document.getElementById(`delQty_${idx}`);
+                if (input) {
+                    const qty = parseFloat(input.value) || 0;
+                    if (qty > 0) {
+                        deliveryLineItems.push({ id: item.id, name: item.name, qty: qty });
+                    }
+                }
+            });
 
-            v.deliveryInfo = {
+            if (deliveryLineItems.length === 0) return showToast("Aucune quantité saisie", "#ef4444");
+
+            if (!v.deliveries) v.deliveries = [];
+            v.deliveries.push({
                 driver: driver,
-                actualDate: date,
-                items: deliveryItems
-            };
+                date: date,
+                items: deliveryLineItems
+            });
 
             saveData();
             closeModal('deliveryModal');
             render();
-            showToast("Livraison enregistrée avec succès", "#10b981");
+            showToast("Passage de livraison enregistré", "#10b981");
         }
 
         // --- GESTION REGLEMENTS ---
@@ -1025,24 +1075,30 @@
             
             const content = document.getElementById('venteDetailsContent');
             const totalPaye = (v.payments || []).reduce((s, p) => s + p.amount, 0);
-            const isDelivered = v.deliveryInfo && v.deliveryInfo.actualDate;
-            const dateLivraisonFinale = isDelivered ? v.deliveryInfo.actualDate : 'En attente';
+            const isFullyDelivered = checkIsFullyDelivered(v);
+            const isPartiallyDelivered = checkIsPartiallyDelivered(v);
+
             let badgeClass = 'mode-badge ';
             if(v.mode === 'Cash') badgeClass += 'mode-cash'; else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm'; else badgeClass += 'mode-credit';
 
-            const solvedBanner = v.reste <= 0 ? `
+            const statusBanner = (v.reste <= 0 && isFullyDelivered) ? `
                 <div class="banner-paid">
                     <i data-lucide="check-circle"></i>
-                    ${isDelivered ? 'Opération Clôturée (Soldée & Livrée)' : 'Paiement Soldé - Livraison en attente'}
+                    OPÉRATION CLÔTURÉE (SOLDÉE & LIVRÉE)
                 </div>
-            ` : '';
+            ` : (v.reste <= 0 ? `
+                <div class="banner-paid" style="background-color: #3b82f6;">
+                    <i data-lucide="info"></i>
+                    PAIEMENT SOLDÉ - LIVRAISON EN COURS
+                </div>
+            ` : '');
 
             content.innerHTML = `
-                ${solvedBanner}
+                ${statusBanner}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <div>
                         <h2 style="color:var(--nav-bg)">DÉTAILS DE L'OPÉRATION</h2>
-                        <p style="font-size:0.9rem; color:#64748b;">Consultation de la fiche de vente</p>
+                        <p style="font-size:0.9rem; color:#64748b;">Fiche de vente n° ${v.num}</p>
                     </div>
                     <button onclick="closeModal('venteDetailsModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
                 </div>
@@ -1051,20 +1107,22 @@
                         <div class="details-title">Information Document</div>
                         <div class="details-item"><span class="details-label">N° Facture</span><span class="details-value">${v.num}</span></div>
                         <div class="details-item"><span class="details-label">Date Commande</span><span class="details-value">${v.creationDate || v.date}</span></div>
-                        <div class="details-item"><span class="details-label">Date Livraison Souhaitée</span><span class="details-value">${v.date}</span></div>
-                        <div class="details-item"><span class="details-label">Statut Livraison</span><span class="details-value" style="color:${isDelivered ? '#16a34a' : '#f97316'}">${isDelivered ? 'Livré' : 'En attente'}</span></div>
-                        <div class="details-item"><span class="details-label">Date de Livraison Effective</span><span class="details-value" style="color:${isDelivered ? '#16a34a' : '#f97316'}">${dateLivraisonFinale}</span></div>
-                        ${isDelivered ? `<div class="details-item"><span class="details-label">Livreur Associé</span><span class="details-value" style="color:var(--nav-bg)">${v.deliveryInfo.driver}</span></div>` : ''}
-                        <div class="details-item"><span class="details-label">Mode de Règlement Global</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
+                        <div class="details-item"><span class="details-label">Livraison Souhaitée</span><span class="details-value">${v.date}</span></div>
+                        <div class="details-item">
+                            <span class="details-label">Statut Livraison</span>
+                            <span class="details-value">
+                                <span class="status-badge ${isFullyDelivered ? 'status-delivered' : (isPartiallyDelivered ? 'status-partial' : 'status-pending')}">
+                                    ${isFullyDelivered ? 'Livré' : (isPartiallyDelivered ? 'Partiel' : 'En attente')}
+                                </span>
+                            </span>
+                        </div>
+                        <div class="details-item"><span class="details-label">Mode de Règlement</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
                     </div>
                     <div class="details-section" style="margin-top:0;">
                         <div class="details-title">Information Client</div>
                         <div class="details-item"><span class="details-label">Nom / Raison Sociale</span><span class="details-value">${v.clientName}</span></div>
                         <div class="details-item"><span class="details-label">Code Client</span><span class="details-value">${v.clientId}</span></div>
-                        <div class="details-item"><span class="details-label">Statut Client</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
                         <div class="details-item"><span class="details-label">Contact Principal</span><span class="details-value">${c.phone1 || 'Non renseigné'}</span></div>
-                        <div class="details-item"><span class="details-label">Contact Secondaire</span><span class="details-value">${c.phone2 || '-'}</span></div>
-                        <div class="details-item"><span class="details-label">Email</span><span class="details-value">${c.email || '-'}</span></div>
                         <div class="details-item"><span class="details-label">Adresse Géo.</span><span class="details-value">${c.address || 'Non renseignée'}</span></div>
                         <div class="details-item"><span class="details-label">Plafond Autorisé</span><span class="details-value">${c.limit ? Math.round(c.limit).toLocaleString() : '0'} FCFA</span></div>
                     </div>
@@ -1074,33 +1132,53 @@
                             <div>
                                 <div class="details-item"><span class="details-label">Total HT Brut</span><span class="details-value">${Math.round(v.brutHT || v.ttc).toLocaleString()} FCFA</span></div>
                                 <div class="details-item"><span class="details-label">Remise Totale</span><span class="details-value" style="color:#dc2626">-${Math.round(v.remiseTotal || 0).toLocaleString()} FCFA</span></div>
-                                <div class="details-item"><span class="details-label">Montant Net HT</span><span class="details-value">${Math.round(v.netHT || v.ttc).toLocaleString()} FCFA</span></div>
                                 <div class="details-item"><span class="details-label">TVA (18%)</span><span class="details-value">${Math.round(v.tvaAmount || 0).toLocaleString()} FCFA</span></div>
                             </div>
                             <div style="background:#f1f5f9; padding:10px; border-radius:8px;">
                                 <div class="details-item"><span class="details-label" style="font-weight:bold; color:#1e293b">MONTANT TTC</span><span class="details-value" style="font-size:1.1rem; color:var(--nav-bg)">${Math.round(v.ttc).toLocaleString()} FCFA</span></div>
                                 <div class="details-item"><span class="details-label">Montant Déjà Payé</span><span class="details-value" style="color:#16a34a">${Math.round(totalPaye).toLocaleString()} FCFA</span></div>
                                 <div class="details-item" style="border-top:1px solid #cbd5e1; margin-top:5px; padding-top:5px;"><span class="details-label" style="font-weight:bold; color:#dc2626">RESTE À PAYER</span><span class="details-value" style="font-size:1.1rem; color:#dc2626">${Math.round(v.reste).toLocaleString()} FCFA</span></div>
-                                <div class="details-item"><span class="details-label">Nombre de Règlements</span><span class="details-value">${v.payments ? v.payments.length : 0} versement(s)</span></div>
                             </div>
                         </div>
                     </div>
                 </div>
+                
                 <div class="details-section">
-                    <div class="details-title">Articles et Livraisons</div>
+                    <div class="details-title">Articles & État de Livraison</div>
                     <table style="margin-top:10px;">
-                        <thead><tr><th>Désignation</th><th style="text-align:center">Commandé</th><th style="text-align:center">Livré</th><th style="text-align:right">P.U</th><th style="text-align:right">Total Ligne</th></tr></thead>
-                        <tbody>${v.items.map((i, idx) => {
-                            const delivered = isDelivered ? v.deliveryInfo.items[idx].deliveredQty : '---';
-                            return `<tr><td>${i.name}</td><td style="text-align:center"><strong>${i.qty}</strong></td><td style="text-align:center; color:#16a34a"><strong>${delivered}</strong></td><td style="text-align:right">${Math.round(i.price).toLocaleString()}</td><td style="text-align:right; font-weight:600;">${Math.round(i.qty * i.price * (1-i.rem/100)).toLocaleString()} FCFA</td></tr>`;
+                        <thead><tr><th>Désignation</th><th style="text-align:center">Commandé</th><th style="text-align:center">Déjà Livré</th><th style="text-align:center">Reste</th></tr></thead>
+                        <tbody>${v.items.map((i) => {
+                            const delivered = getDeliveredQtyForArticle(v, i.id);
+                            const remaining = i.qty - delivered;
+                            return `<tr>
+                                <td>${i.name}</td>
+                                <td style="text-align:center">${i.qty}</td>
+                                <td style="text-align:center; color:#16a34a; font-weight:bold;">${delivered}</td>
+                                <td style="text-align:center; color:${remaining > 0 ? '#f97316' : '#16a34a'}">${remaining}</td>
+                            </tr>`;
                         }).join('')}</tbody>
                     </table>
                 </div>
+
+                <div class="details-section">
+                    <div class="details-title">Historique des Passages de Livraison</div>
+                    <table style="margin-top:10px;">
+                        <thead><tr><th>Date Passage</th><th>Livreur</th><th>Articles Livrés</th></tr></thead>
+                        <tbody>${v.deliveries && v.deliveries.length ? v.deliveries.map(d => `
+                            <tr>
+                                <td>${d.date}</td>
+                                <td><strong>${d.driver}</strong></td>
+                                <td style="font-size:0.8rem;">${d.items.map(di => `${di.name} (x${di.qty})`).join(', ')}</td>
+                            </tr>`).join('') : '<tr><td colspan="3" style="text-align:center; padding:10px; opacity:0.5;">Aucun passage de livraison effectué.</td></tr>'}
+                        </tbody>
+                    </table>
+                </div>
+
                 <div class="details-section">
                     <div class="details-title">Historique des Règlements</div>
                     <table style="margin-top:10px;">
-                        <thead><tr><th>N° Règl.</th><th>Date</th><th>Mode</th><th>Montant Versé</th><th>Preuve</th></tr></thead>
-                        <tbody>${v.payments && v.payments.length ? v.payments.map(p => `<tr><td><strong>${p.num || '---'}</strong></td><td>${p.date}</td><td>${p.mode || '---'}</td><td style="font-weight:600; color:#16a34a">${Math.round(p.amount).toLocaleString()} FCFA</td><td>${p.proof}</td></tr>`).join('') : '<tr><td colspan="5" style="text-align:center; padding:10px; opacity:0.5;">Aucun règlement effectué pour le moment.</td></tr>'}</tbody>
+                        <thead><tr><th>Date</th><th>Mode</th><th>Montant Versé</th><th>Preuve</th></tr></thead>
+                        <tbody>${v.payments && v.payments.length ? v.payments.map(p => `<tr><td>${p.date}</td><td>${p.mode}</td><td style="font-weight:600; color:#16a34a">${Math.round(p.amount).toLocaleString()} FCFA</td><td>${p.proof}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:10px; opacity:0.5;">Aucun versement enregistré.</td></tr>'}</tbody>
                     </table>
                 </div>
             `;

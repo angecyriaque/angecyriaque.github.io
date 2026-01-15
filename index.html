@@ -226,7 +226,6 @@
         .details-label { color: #64748b; font-weight: 500; }
         .details-value { font-weight: 600; text-align: right; }
 
-        /* Banner spécifique pour solde atteint */
         .banner-paid {
             background-color: #10b981;
             color: white;
@@ -247,6 +246,11 @@
         .type-indicator { font-weight: bold; padding: 2px 6px; border-radius: 4px; font-size: 0.7rem; margin-right: 5px; text-transform: uppercase; }
         .type-facture { background: #dcfce7; color: #166534; }
         .type-devis { background: #fff7ed; color: #9a3412; }
+
+        /* Admin Code Input Style for Conversion */
+        .admin-code-box {
+            background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 15px;
+        }
     </style>
 </head>
 <body>
@@ -592,7 +596,6 @@
             const grid = document.getElementById('mainGrid');
             const dynamicButtons = document.getElementById('dynamic-buttons');
             
-            // Réinitialiser la recherche lors du changement d'onglet
             document.getElementById('searchInput').value = "";
 
             if (view === 'VENTE') {
@@ -659,11 +662,10 @@
         }
 
         function renderVentes(container, data) {
-            // Tri chronologique : plus récent au plus ancien basé sur ID (VTE-timestamp) ou num
             const sortedData = [...data].sort((a, b) => {
-                const idA = a.id ? a.id.replace('VTE-', '') : 0;
-                const idB = b.id ? b.id.replace('VTE-', '') : 0;
-                return parseInt(idB) - parseInt(idA);
+                const numA = parseInt(a.num.split('-')[1]) || 0;
+                const numB = parseInt(b.num.split('-')[1]) || 0;
+                return numB - numA;
             });
 
             container.innerHTML = `
@@ -717,7 +719,7 @@
                                         <button class="btn" style="padding:5px 10px; font-size:0.75rem; background: #334155;" onclick="showVenteDetails('${v.id}')">Détails</button>
                                         
                                         ${isQuote ? `
-                                            <button class="btn btn-convert" style="padding:5px 10px; font-size:0.75rem;" onclick="convertQuoteToSale('${v.id}')">Convertir</button>
+                                            <button class="btn btn-convert" style="padding:5px 10px; font-size:0.75rem;" onclick="showVenteDetails('${v.id}')">Convertir</button>
                                             <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">Modifier</button>
                                         ` : `
                                             ${(!isFullyDelivered || !isSold) ? `
@@ -746,6 +748,17 @@
                 </div>
             `;
             lucide.createIcons();
+        }
+
+        // --- HELPERS NUMÉROTATION CONTINUE ---
+        function getNextSequenceNumber(type) {
+            const prefix = type === 'DEVIS' ? 'D-' : 'F-';
+            const existingNums = db.VENTE
+                .filter(v => v.docType === type)
+                .map(v => parseInt(v.num.split('-')[1]) || 0);
+            
+            const max = existingNums.length > 0 ? Math.max(...existingNums) : 1000;
+            return prefix + (max + 1);
         }
 
         // --- HELPERS LIVRAISON ---
@@ -787,8 +800,7 @@
             document.getElementById('adminCodeInput').value = "";
             document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
             
-            const prefix = type === 'DEVIS' ? 'D-' : 'F-';
-            const factNum = prefix + (db.VENTE.filter(v => v.docType === type).length + 1001);
+            const factNum = getNextSequenceNumber(type);
             document.getElementById('factureNumber').textContent = factNum;
             document.getElementById('tvaToggle').checked = false;
             
@@ -823,7 +835,6 @@
 
         function editSale(id) {
             const v = db.VENTE.find(x => x.id === id);
-            // Remise en stock temporaire pour la ré-édition (uniquement si ce n'est pas un devis)
             if (v.docType !== 'DEVIS') {
                 v.items.forEach(soldItem => {
                     const article = db.ARTICLE.find(a => a.id === soldItem.id);
@@ -839,7 +850,6 @@
             document.getElementById('saleDate').value = v.date;
             document.getElementById('tvaToggle').checked = v.tvaEnabled;
             
-            // On demande le code admin pour modifier une facture existante (pas pour les devis)
             document.getElementById('adminCodeSection').style.display = v.docType === 'DEVIS' ? 'none' : 'block';
             
             v.items.forEach((item, index) => {
@@ -868,7 +878,6 @@
             const tiers = db.CLIENT.find(c => c.id === cid);
             if (!tiers) return;
 
-            // Les devis ne sont pas impactés par les plafonds financiers tant qu'ils ne sont pas convertis
             if (type === 'DEVIS') {
                 alertBox.style.display = 'none'; globalPlafondValid = true;
                 plafondInfo.style.display = 'none';
@@ -949,7 +958,6 @@
                 const rem = parseFloat(document.getElementById(`lineRem_${i}`).value) || 0;
                 if(aid) {
                     const art = db.ARTICLE.find(a => a.id === aid);
-                    // Pour les devis, on ne bloque pas sur le stock car c'est une simple cotation
                     if(type !== 'DEVIS' && qty > art.stock) {
                         qtyInput.classList.add('stock-error'); warning.style.display = 'block';
                         warning.textContent = `Stock insuffisant (${art.stock} max)`; globalStockValid = false;
@@ -964,7 +972,6 @@
                 } else { qtyInput.classList.remove('stock-error'); warning.style.display = 'none'; }
             }
             
-            // On peut toujours enregistrer un devis
             const canSaveFacture = globalStockValid && globalPlafondValid && cid && count > 0;
             const canSaveQuote = cid && count > 0;
             
@@ -1009,7 +1016,6 @@
                     totalBrut += art.price * qty; totalRemise += (art.price * qty) * (rem/100);
                     items.push({ id: aid, name: art.name, qty: qty, price: art.price, rem: rem });
                     
-                    // On ne déduit le stock que pour les factures réelles
                     if (type === 'FACTURE') {
                         art.stock -= qty;
                     }
@@ -1052,11 +1058,13 @@
             showToast(editId ? "Document modifié" : `${type} enregistré`);
         }
 
-        // --- CONVERSION DEVIS -> COMMANDE ---
+        // --- CONVERSION DEVIS -> COMMANDE AVEC CODE ADMIN ---
         function convertQuoteToSale(id) {
+            const adminCode = document.getElementById('adminCodeConvert').value;
+            if (adminCode !== ADMIN_CODE) return showToast("Code administrateur incorrect", "#ef4444");
+
             const v = db.VENTE.find(x => x.id === id);
             
-            // Vérification des stocks avant conversion
             let stockError = false;
             let errorMsg = "";
             v.items.forEach(item => {
@@ -1071,7 +1079,6 @@
                 return showToast("Conversion impossible : stock insuffisant pour " + errorMsg, "#ef4444");
             }
 
-            // Vérification Plafond si crédit
             if (v.mode === 'Crédit') {
                 const tiers = db.CLIENT.find(c => c.id === v.clientId);
                 const totalImpayes = db.VENTE.filter(sale => sale.clientId === v.clientId && sale.docType === 'FACTURE').reduce((sum, sale) => sum + sale.reste, 0);
@@ -1082,19 +1089,18 @@
                 }
             }
 
-            // Conversion effective
             v.docType = 'FACTURE';
-            v.num = 'F-' + (db.VENTE.filter(sale => sale.docType === 'FACTURE').length + 1001);
+            v.num = getNextSequenceNumber('FACTURE');
             
-            // Déduction du stock
             v.items.forEach(item => {
                 const art = db.ARTICLE.find(a => a.id === item.id);
                 art.stock -= item.qty;
             });
 
             saveData();
+            closeModal('venteDetailsModal');
             render();
-            showToast("Devis converti en Facture avec succès !", "#8b5cf6");
+            showToast("Devis converti en Facture " + v.num, "#8b5cf6");
         }
 
         // --- GESTION LIVRAISON PROGRESSIVE ---
@@ -1115,7 +1121,7 @@
                 ${v.items.map((item, idx) => {
                     const alreadyDelivered = getDeliveredQtyForArticle(v, item.id);
                     const remaining = item.qty - alreadyDelivered;
-                    if (remaining <= 0) return ''; // Article déjà entièrement livré
+                    if (remaining <= 0) return '';
                     return `
                         <div class="form-grid" style="margin-bottom:8px; align-items:center;">
                             <span style="font-size:0.85rem;">${item.name}<br><small style="color:#64748b">Restant: ${remaining}</small></span>
@@ -1313,7 +1319,17 @@
                     </table>
                 </div>
 
-                ${isQuote ? '' : `
+                ${isQuote ? `
+                    <div class="admin-code-box">
+                        <label style="color:#c2410c; font-weight:bold; display:block; margin-bottom:8px;">VALIDATION ADMINISTRATEUR REQUISE POUR CONVERSION</label>
+                        <div style="display:flex; gap:10px;">
+                            <input type="password" id="adminCodeConvert" placeholder="Code Administrateur" style="flex:1;">
+                            <button class="btn btn-convert" style="padding:10px 20px;" onclick="convertQuoteToSale('${v.id}')">
+                                <i data-lucide="check-circle"></i> CONVERTIR EN FACTURE
+                            </button>
+                        </div>
+                    </div>
+                ` : `
                     <div class="details-section">
                         <div class="details-title">Historique des Passages de Livraison</div>
                         <table style="margin-top:10px;">
@@ -1336,14 +1352,6 @@
                         </table>
                     </div>
                 `}
-
-                ${isQuote ? `
-                    <div style="margin-top:20px; display:flex; justify-content:center;">
-                        <button class="btn btn-convert" style="width:100%; justify-content:center; padding:15px;" onclick="convertQuoteToSale('${v.id}'); closeModal('venteDetailsModal');">
-                            <i data-lucide="check-circle"></i> CONVERTIR CE DEVIS EN COMMANDE RÉELLE
-                        </button>
-                    </div>
-                ` : ''}
             `;
             openModal('venteDetailsModal'); lucide.createIcons();
         }
@@ -1432,7 +1440,6 @@
             saveData(); render(); closeModal('formModal'); showToast("Sauvegarde réussie");
         }
 
-        // --- UTILITAIRES ---
         function toggleTheme() {
             const b = document.body; b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
             lucide.createIcons();

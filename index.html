@@ -218,6 +218,24 @@
         .details-item { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px dotted var(--border-color); }
         .details-label { color: #64748b; font-weight: 500; }
         .details-value { font-weight: 600; text-align: right; }
+
+        /* Banner spécifique pour solde atteint */
+        .banner-paid {
+            background-color: #10b981;
+            color: white;
+            padding: 10px;
+            text-align: center;
+            border-radius: 8px;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            box-shadow: 0 4px 6px -1px rgba(16, 185, 129, 0.2);
+        }
     </style>
 </head>
 <body>
@@ -573,7 +591,6 @@
                     </div>
                 `).join('');
             } else {
-                // Rendu Client ET Fournisseur (activé)
                 grid.innerHTML = data.map(item => `
                     <div class="card" onclick="editItem('${item.id}')">
                         <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -647,7 +664,6 @@
             document.getElementById('factureNumber').textContent = factNum;
             document.getElementById('tvaToggle').checked = false;
             
-            // Sélection des clients UNIQUEMENT pour la facturation
             const clientSel = document.getElementById('saleClientSelect');
             clientSel.innerHTML = '<option value="">-- Sélectionner un client --</option>' + 
                 db.CLIENT.map(c => `<option value="${c.id}">${c.name} (${c.id})</option>`).join('');
@@ -911,7 +927,16 @@
             let badgeClass = 'mode-badge ';
             if(v.mode === 'Cash') badgeClass += 'mode-cash'; else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm'; else badgeClass += 'mode-credit';
 
+            // Information "Règlement effectué" si solde à zéro
+            const solvedBanner = v.reste <= 0 ? `
+                <div class="banner-paid">
+                    <i data-lucide="check-circle"></i>
+                    Règlement effectué
+                </div>
+            ` : '';
+
             content.innerHTML = `
+                ${solvedBanner}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
                     <div>
                         <h2 style="color:var(--nav-bg)">DÉTAILS DE L'OPÉRATION</h2>

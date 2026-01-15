@@ -247,15 +247,8 @@
         .type-facture { background: #dcfce7; color: #166534; }
         .type-devis { background: #fff7ed; color: #9a3412; }
 
-        /* Admin Code Input Style for Conversion */
-        .admin-code-box {
-            background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 15px;
-        }
-
         .btn-delete {
             background: linear-gradient(135deg, #ef4444, #dc2626);
-            padding: 5px 10px;
-            font-size: 0.75rem;
         }
     </style>
 </head>
@@ -302,7 +295,7 @@
         </div>
     </div>
 
-    <!-- Modal Formulaire Standard -->
+    <!-- Modal Formulaire Standard (Clients, Fournisseurs, Articles) -->
     <div class="modal-overlay" id="formModal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
@@ -488,9 +481,16 @@
                     <p style="margin-top: 15px; font-weight: 600;">Merci pour la confiance et à très bientôt !</p>
                 </div>
             </div>
-            <div style="margin-top:2rem; display:flex; justify-content:flex-end; gap:10px;" class="no-print">
-                <button type="button" class="btn" style="background:#94a3b8;" onclick="closeModal('saleModal')">Annuler</button>
-                <button type="button" class="btn" id="btnSavePrint" style="background-color: #ff4500;" onclick="saveAndPrint()">Enregistrer et Imprimer</button>
+            <div style="margin-top:2rem; display:flex; justify-content:space-between; align-items:center;" class="no-print">
+                <div id="deleteActionWrapper">
+                    <button type="button" id="btnDeleteSale" class="btn btn-delete" style="display:none;" onclick="handleSaleDeletion()">
+                        <i data-lucide="trash-2"></i> Supprimer cette commande
+                    </button>
+                </div>
+                <div style="display:flex; gap:10px;">
+                    <button type="button" class="btn" style="background:#94a3b8;" onclick="closeModal('saleModal')">Annuler</button>
+                    <button type="button" class="btn" id="btnSavePrint" style="background-color: #ff4500;" onclick="saveAndPrint()">Enregistrer et Imprimer</button>
+                </div>
             </div>
         </div>
     </div>
@@ -668,16 +668,12 @@
         }
 
         function renderVentes(container, data) {
-            // Tri par date décroissante (plus récent d'abord)
+            // Tri par date de livraison (la plus récente d'abord)
             const sortedData = [...data].sort((a, b) => {
                 const dateA = new Date(a.date).getTime();
                 const dateB = new Date(b.date).getTime();
-                
-                // Si dates identiques, trier par numéro décroissant
                 if (dateB === dateA) {
-                    const numA = parseInt(a.num.split('-')[1]) || 0;
-                    const numB = parseInt(b.num.split('-')[1]) || 0;
-                    return numB - numA;
+                    return b.id > a.id ? 1 : -1; // Fallback sur l'ID si date identique
                 }
                 return dateB - dateA;
             });
@@ -688,7 +684,7 @@
                         <thead>
                             <tr>
                                 <th>N° / Type</th>
-                                <th>Date de livraison</th>
+                                <th>Date Livraison</th>
                                 <th>Client</th>
                                 <th>Total TTC</th>
                                 <th>Reste</th>
@@ -704,7 +700,6 @@
                                 const isSold = v.reste <= 0;
                                 const isFullyDelivered = checkIsFullyDelivered(v);
                                 const isPartiallyDelivered = checkIsPartiallyDelivered(v);
-                                const canBeDeleted = isQuote || (!isSold && !isPartiallyDelivered);
                                 
                                 return `
                                 <tr>
@@ -736,15 +731,11 @@
                                         ${isQuote ? `
                                             <button class="btn btn-convert" style="padding:5px 10px; font-size:0.75rem;" onclick="showVenteDetails('${v.id}')">Convertir</button>
                                             <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">Modifier</button>
-                                            <button class="btn btn-delete" onclick="deleteSale('${v.id}')">Suppr.</button>
                                         ` : `
                                             ${(!isFullyDelivered || !isSold) ? `
-                                                ${(!isSold && !isPartiallyDelivered) ? `
-                                                    <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
-                                                        <i data-lucide="edit-3" size="14"></i> Modifier
-                                                    </button>
-                                                    <button class="btn btn-delete" onclick="deleteSale('${v.id}')">Suppr.</button>
-                                                ` : ''}
+                                                <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
+                                                    <i data-lucide="edit-3" size="14"></i> Modifier
+                                                </button>
                                                 
                                                 ${!isSold ? `
                                                     <button class="btn btn-accent" style="padding:5px 10px; font-size:0.75rem;" onclick="openPayModal('${v.id}')">Régler</button>
@@ -770,18 +761,19 @@
         // --- HELPERS NUMÉROTATION CONTINUE ---
         function getNextSequenceNumber(type) {
             const prefix = type === 'DEVIS' ? 'D-' : 'F-';
-            const existingNums = db.VENTE
+            const storageKey = `crm_last_counter_${type}`;
+            let lastCounter = parseInt(localStorage.getItem(storageKey)) || 1000;
+            
+            // On vérifie aussi dans la DB pour être sûr
+            const maxInDb = db.VENTE
                 .filter(v => v.docType === type)
-                .map(v => parseInt(v.num.split('-')[1]) || 0);
+                .reduce((max, v) => {
+                    const num = parseInt(v.num.split('-')[1]);
+                    return num > max ? num : max;
+                }, 1000);
             
-            // Pour garantir l'unicité même après suppression, on peut aussi stocker le dernier compteur utilisé
-            const lastCounterKey = `crm_last_count_${type}`;
-            const lastUsed = parseInt(localStorage.getItem(lastCounterKey)) || 1000;
-            
-            const maxExisting = existingNums.length > 0 ? Math.max(...existingNums) : 1000;
-            const nextVal = Math.max(maxExisting, lastUsed) + 1;
-            
-            localStorage.setItem(lastCounterKey, nextVal);
+            const nextVal = Math.max(lastCounter, maxInDb) + 1;
+            localStorage.setItem(storageKey, nextVal);
             return prefix + nextVal;
         }
 
@@ -819,6 +811,9 @@
             document.getElementById('saleDocType').value = type;
             document.getElementById('saleModalTitle').textContent = type === 'DEVIS' ? "Création de Devis" : "Édition de Document";
             document.getElementById('factureTitlePrefix').textContent = type === 'DEVIS' ? "DEVIS" : "FACTURE";
+            
+            // Masquer le bouton de suppression pour un nouveau document
+            document.getElementById('btnDeleteSale').style.display = 'none';
             
             document.getElementById('adminCodeSection').style.display = 'none';
             document.getElementById('adminCodeInput').value = "";
@@ -859,13 +854,15 @@
 
         function editSale(id) {
             const v = db.VENTE.find(x => x.id === id);
+            
+            // Restaurer temporairement le stock pour la modification
             if (v.docType !== 'DEVIS') {
                 v.items.forEach(soldItem => {
                     const article = db.ARTICLE.find(a => a.id === soldItem.id);
                     if (article) article.stock += soldItem.qty;
                 });
             }
-            saveData();
+            
             openSaleForm(v.docType);
             document.getElementById('editVenteId').value = v.id;
             document.getElementById('factureNumber').textContent = v.num;
@@ -873,6 +870,17 @@
             document.getElementById('salePaymentMode').value = v.mode;
             document.getElementById('saleDate').value = v.date;
             document.getElementById('tvaToggle').checked = v.tvaEnabled;
+            
+            // Affichage du bouton de suppression si les conditions sont remplies
+            const isSold = v.reste <= 0;
+            const isFullyDelivered = checkIsFullyDelivered(v);
+            const isQuote = v.docType === 'DEVIS';
+            
+            if (isQuote || (!isSold && !isFullyDelivered)) {
+                document.getElementById('btnDeleteSale').style.display = 'inline-flex';
+            } else {
+                document.getElementById('btnDeleteSale').style.display = 'none';
+            }
             
             document.getElementById('adminCodeSection').style.display = v.docType === 'DEVIS' ? 'none' : 'block';
             
@@ -884,33 +892,24 @@
             });
             checkCreditAvailability();
             updateFacture();
-            render();
         }
 
-        function deleteSale(id) {
-            const idx = db.VENTE.findIndex(v => v.id === id);
-            const v = db.VENTE[idx];
+        function handleSaleDeletion() {
+            const id = document.getElementById('editVenteId').value;
+            if (!id) return;
             
-            const isSold = v.reste <= 0;
-            const isPartiallyDelivered = checkIsPartiallyDelivered(v) || checkIsFullyDelivered(v);
+            const v = db.VENTE.find(x => x.id === id);
+            if (!v) return;
+
+            const confirmMsg = `Êtes-vous sûr de vouloir supprimer définitivement ce document (${v.num}) ?\n\nNote: Le stock a déjà été restitué temporairement pour l'édition.`;
             
-            if (v.docType !== 'DEVIS' && (isSold || isPartiallyDelivered)) {
-                return showToast("Suppression impossible : Document déjà traité", "#ef4444");
-            }
-            
-            const confirmation = confirm(`Voulez-vous vraiment supprimer le document ${v.num} ?`);
-            if (confirmation) {
-                // Si c'est une facture, on rend le stock
-                if (v.docType !== 'DEVIS') {
-                    v.items.forEach(item => {
-                        const art = db.ARTICLE.find(a => a.id === item.id);
-                        if (art) art.stock += item.qty;
-                    });
-                }
-                db.VENTE.splice(idx, 1);
+            if (confirm(confirmMsg)) {
+                // Suppression de la base de données
+                db.VENTE = db.VENTE.filter(x => x.id !== id);
                 saveData();
+                closeModal('saleModal');
                 render();
-                showToast("Document supprimé avec succès");
+                showToast("Document supprimé avec succès", "#dc2626");
             }
         }
 
@@ -1047,8 +1046,17 @@
 
             if (editId && type === 'FACTURE') {
                 const code = document.getElementById('adminCodeInput').value;
-                if (code !== ADMIN_CODE) return showToast("Code administrateur incorrect", "#ef4444");
+                if (code !== ADMIN_CODE) {
+                    // Si on annule, il faut quand même restorer le stock soustrait lors de l'ouverture de l'édition
+                    const vOld = db.VENTE.find(x => x.id === editId);
+                    vOld.items.forEach(item => {
+                        const art = db.ARTICLE.find(a => a.id === item.id);
+                        if (art) art.stock -= item.qty;
+                    });
+                    return showToast("Code administrateur incorrect", "#ef4444");
+                }
             }
+            
             if(type === 'FACTURE' && !globalStockValid) return showToast("Certains articles dépassent le stock disponible", "#ef4444");
             if(type === 'FACTURE' && !globalPlafondValid) return showToast("Action bloquée : Vérifiez les plafonds ou le statut client", "#ef4444");
             
@@ -1371,9 +1379,9 @@
                 </div>
 
                 ${isQuote ? `
-                    <div class="admin-code-box">
-                        <label style="color:#c2410c; font-weight:bold; display:block; margin-bottom:8px;">VALIDATION ADMINISTRATEUR REQUISE POUR CONVERSION</label>
-                        <div style="display:flex; gap:10px;">
+                    <div class="details-section">
+                        <div class="details-title" style="color:#c2410c;">Validation Administrateur Requise pour Conversion</div>
+                        <div style="display:flex; gap:10px; margin-top:10px;">
                             <input type="password" id="adminCodeConvert" placeholder="Code Administrateur" style="flex:1;">
                             <button class="btn btn-convert" style="padding:10px 20px;" onclick="convertQuoteToSale('${v.id}')">
                                 <i data-lucide="check-circle"></i> CONVERTIR EN FACTURE
@@ -1510,21 +1518,7 @@
             const data = db[currentView];
             
             if (currentView === 'VENTE') {
-                const filtered = data.filter(v => {
-                    const isFullyDelivered = checkIsFullyDelivered(v);
-                    const isPartiallyDelivered = checkIsPartiallyDelivered(v);
-                    const deliveryStatus = isFullyDelivered ? 'livré' : (isPartiallyDelivered ? 'partiel' : 'en attente');
-                    const paymentStatus = v.reste <= 0 ? 'soldé' : 'impayé';
-                    const docTypeLabel = v.docType === 'DEVIS' ? 'devis' : 'facture';
-                    
-                    return (
-                        v.clientName.toLowerCase().includes(q) || 
-                        v.num.toLowerCase().includes(q) ||
-                        paymentStatus.includes(q) ||
-                        deliveryStatus.includes(q) ||
-                        docTypeLabel.includes(q)
-                    );
-                });
+                const filtered = data.filter(v => (v.clientName.toLowerCase().includes(q) || v.num.toLowerCase().includes(q)));
                 render(filtered);
             } else {
                 render(data.filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));

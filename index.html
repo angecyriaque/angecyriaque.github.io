@@ -99,6 +99,7 @@
         .btn:disabled { background: #cbd5e1; cursor: not-allowed; transform: none; filter: none; }
         .btn-danger { background: linear-gradient(135deg, #ef4444, #b91c1c); }
         .btn-accent { background: var(--active-bg); }
+        .btn-success { background: linear-gradient(135deg, #10b981, #059669); }
         
         .btn-edit-yellow {
             background: linear-gradient(135deg, #facc15, #eab308); color: #422006; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
@@ -139,6 +140,8 @@
         .status-subscriber { background-color: var(--status-subscriber); }
         .status-occasional { background-color: var(--status-occasional); }
         .status-rupture { background-color: var(--status-out-of-stock); }
+        .status-delivered { background-color: #10b981; }
+        .status-pending { background-color: #f97316; }
 
         .card-code { font-size: 0.75rem; color: #64748b; font-weight: 800; }
         .card-name { font-size: 1.1rem; font-weight: 700; margin: 0.5rem 0; }
@@ -513,6 +516,37 @@
         </div>
     </div>
 
+    <!-- Modal Livraison -->
+    <div class="modal-overlay" id="deliveryModal">
+        <div class="modal-content">
+            <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
+                <h2>Validation de Livraison</h2>
+                <button onclick="closeModal('deliveryModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+            </div>
+            <div class="form-grid">
+                <input type="hidden" id="deliveryVenteId">
+                <div class="form-group full">
+                    <label>Livreur *</label>
+                    <select id="deliveryDriverSelect"></select>
+                    <div class="list-manager">
+                        <input type="text" id="newDriverName" placeholder="Nouveau livreur">
+                        <button type="button" onclick="addListOption('deliveryDriverSelect', 'newDriverName', 'drivers')" class="btn" style="padding:5px 10px;"><i data-lucide="plus"></i></button>
+                    </div>
+                </div>
+                <div class="form-group full">
+                    <label>Date de livraison réelle</label>
+                    <input type="date" id="deliveryActualDate">
+                </div>
+                <div class="full" id="deliveryItemsList" style="margin-top:10px;">
+                    <!-- Liste des articles avec input pour qtés livrées -->
+                </div>
+                <div style="margin-top:1rem;" class="full">
+                    <button class="btn btn-success full" style="width:100%; justify-content:center;" onclick="executeDelivery()">Confirmer la livraison</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Modal Détails Vente -->
     <div class="modal-overlay" id="venteDetailsModal">
         <div class="modal-content modal-lg" id="venteDetailsContent"></div>
@@ -528,6 +562,7 @@
         let currentView = 'CLIENT';
         let families = JSON.parse(localStorage.getItem('crm_families')) || ["Electronique", "Bureau", "Divers"];
         let subfamilies = JSON.parse(localStorage.getItem('crm_subfamilies')) || ["Informatique", "Papeterie", "Autre"];
+        let drivers = JSON.parse(localStorage.getItem('crm_drivers')) || ["Ayden", "Moussa", "Jean"];
         
         let db = {
             CLIENT: JSON.parse(localStorage.getItem('crm_clients')) || [],
@@ -619,13 +654,17 @@
                                 <th>Client</th>
                                 <th>Total TTC</th>
                                 <th>Reste</th>
-                                <th>Statut</th>
+                                <th>Statut Paym.</th>
+                                <th>Statut Livraison</th>
                                 <th>Actions</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.length === 0 ? '<tr><td colspan="7" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
-                              data.map(v => `
+                            ${data.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
+                              data.map(v => {
+                                const isSold = v.reste <= 0;
+                                const isDelivered = v.deliveryInfo && v.deliveryInfo.actualDate;
+                                return `
                                 <tr>
                                     <td><strong>${v.num}</strong></td>
                                     <td>${v.date}</td>
@@ -637,15 +676,26 @@
                                             ${v.reste <= 0 ? 'Soldé' : 'Impayé'}
                                         </span>
                                     </td>
+                                    <td>
+                                        <span class="status-badge ${isDelivered ? 'status-delivered' : 'status-pending'}">
+                                            ${isDelivered ? 'Livré' : 'En attente'}
+                                        </span>
+                                    </td>
                                     <td style="display:flex; gap:5px;">
                                         <button class="btn" style="padding:5px 10px; font-size:0.75rem; background: #334155;" onclick="showVenteDetails('${v.id}')">Détails</button>
-                                        <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
-                                            <i data-lucide="edit-3" size="14"></i> Modifier
-                                        </button>
-                                        ${v.reste > 0 ? `<button class="btn btn-accent" style="padding:5px 10px; font-size:0.75rem;" onclick="openPayModal('${v.id}')">Régler</button>` : ''}
+                                        ${!isSold ? `
+                                            <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
+                                                <i data-lucide="edit-3" size="14"></i> Modifier
+                                            </button>
+                                            <button class="btn btn-accent" style="padding:5px 10px; font-size:0.75rem;" onclick="openPayModal('${v.id}')">Régler</button>
+                                        ` : (isSold && !isDelivered ? `
+                                            <button class="btn btn-success" style="padding:5px 10px; font-size:0.75rem;" onclick="openDeliveryModal('${v.id}')">
+                                                <i data-lucide="truck" size="14"></i> Livraison
+                                            </button>
+                                        ` : '')}
                                     </td>
                                 </tr>
-                            `).join('')}
+                            `;}).join('')}
                         </tbody>
                     </table>
                 </div>
@@ -877,6 +927,56 @@
             closeModal('saleModal'); switchView('VENTE'); showToast(editId ? "Vente modifiée" : "Vente enregistrée");
         }
 
+        // --- GESTION LIVRAISON ---
+        function openDeliveryModal(id) {
+            const v = db.VENTE.find(x => x.id === id);
+            document.getElementById('deliveryVenteId').value = id;
+            document.getElementById('deliveryActualDate').value = new Date().toISOString().split('T')[0];
+            
+            const driverSel = document.getElementById('deliveryDriverSelect');
+            driverSel.innerHTML = '<option value="">-- Sélectionner un livreur --</option>' + 
+                drivers.map(d => `<option value="${d}">${d}</option>`).join('');
+            
+            const itemsList = document.getElementById('deliveryItemsList');
+            itemsList.innerHTML = `
+                <div style="font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:10px;">Vérification des Quantités Livrées</div>
+                ${v.items.map((item, idx) => `
+                    <div class="form-grid" style="margin-bottom:8px; align-items:center;">
+                        <span style="font-size:0.85rem;">${item.name} (${item.qty} commandé)</span>
+                        <input type="number" id="delQty_${idx}" value="${item.qty}" min="0" max="${item.qty}">
+                    </div>
+                `).join('')}
+            `;
+            openModal('deliveryModal');
+        }
+
+        function executeDelivery() {
+            const id = document.getElementById('deliveryVenteId').value;
+            const driver = document.getElementById('deliveryDriverSelect').value;
+            const date = document.getElementById('deliveryActualDate').value;
+            const v = db.VENTE.find(x => x.id === id);
+
+            if(!driver || !date) return showToast("Veuillez remplir tous les champs", "#ef4444");
+
+            const deliveryItems = v.items.map((item, idx) => ({
+                id: item.id,
+                name: item.name,
+                orderedQty: item.qty,
+                deliveredQty: parseFloat(document.getElementById(`delQty_${idx}`).value) || 0
+            }));
+
+            v.deliveryInfo = {
+                driver: driver,
+                actualDate: date,
+                items: deliveryItems
+            };
+
+            saveData();
+            closeModal('deliveryModal');
+            render();
+            showToast("Livraison enregistrée avec succès", "#10b981");
+        }
+
         // --- GESTION REGLEMENTS ---
         function getNextReglementNumber() {
             let total = 0;
@@ -921,20 +1021,19 @@
 
         function showVenteDetails(id) {
             const v = db.VENTE.find(x => x.id === id);
-            // Récupération des infos client complètes
             const c = db.CLIENT.find(cl => cl.id === v.clientId) || {};
             
             const content = document.getElementById('venteDetailsContent');
             const totalPaye = (v.payments || []).reduce((s, p) => s + p.amount, 0);
-            const dateLivraisonFinale = v.reste <= 0 ? (v.payments && v.payments.length ? v.payments[v.payments.length - 1].date : 'N/A') : 'En attente';
+            const isDelivered = v.deliveryInfo && v.deliveryInfo.actualDate;
+            const dateLivraisonFinale = isDelivered ? v.deliveryInfo.actualDate : 'En attente';
             let badgeClass = 'mode-badge ';
             if(v.mode === 'Cash') badgeClass += 'mode-cash'; else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm'; else badgeClass += 'mode-credit';
 
-            // Information "Règlement effectué" si solde à zéro
             const solvedBanner = v.reste <= 0 ? `
                 <div class="banner-paid">
                     <i data-lucide="check-circle"></i>
-                    Règlement effectué
+                    ${isDelivered ? 'Opération Clôturée (Soldée & Livrée)' : 'Paiement Soldé - Livraison en attente'}
                 </div>
             ` : '';
 
@@ -953,14 +1052,16 @@
                         <div class="details-item"><span class="details-label">N° Facture</span><span class="details-value">${v.num}</span></div>
                         <div class="details-item"><span class="details-label">Date Commande</span><span class="details-value">${v.creationDate || v.date}</span></div>
                         <div class="details-item"><span class="details-label">Date Livraison Souhaitée</span><span class="details-value">${v.date}</span></div>
-                        <div class="details-item"><span class="details-label">Date de Livraison Effective</span><span class="details-value" style="color:${v.reste <= 0 ? '#16a34a' : '#f97316'}">${dateLivraisonFinale}</span></div>
+                        <div class="details-item"><span class="details-label">Statut Livraison</span><span class="details-value" style="color:${isDelivered ? '#16a34a' : '#f97316'}">${isDelivered ? 'Livré' : 'En attente'}</span></div>
+                        <div class="details-item"><span class="details-label">Date de Livraison Effective</span><span class="details-value" style="color:${isDelivered ? '#16a34a' : '#f97316'}">${dateLivraisonFinale}</span></div>
+                        ${isDelivered ? `<div class="details-item"><span class="details-label">Livreur Associé</span><span class="details-value" style="color:var(--nav-bg)">${v.deliveryInfo.driver}</span></div>` : ''}
                         <div class="details-item"><span class="details-label">Mode de Règlement Global</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
                     </div>
                     <div class="details-section" style="margin-top:0;">
                         <div class="details-title">Information Client</div>
                         <div class="details-item"><span class="details-label">Nom / Raison Sociale</span><span class="details-value">${v.clientName}</span></div>
                         <div class="details-item"><span class="details-label">Code Client</span><span class="details-value">${v.clientId}</span></div>
-                        <div class="details-item"><span class="details-label">Statut</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
+                        <div class="details-item"><span class="details-label">Statut Client</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
                         <div class="details-item"><span class="details-label">Contact Principal</span><span class="details-value">${c.phone1 || 'Non renseigné'}</span></div>
                         <div class="details-item"><span class="details-label">Contact Secondaire</span><span class="details-value">${c.phone2 || '-'}</span></div>
                         <div class="details-item"><span class="details-label">Email</span><span class="details-value">${c.email || '-'}</span></div>
@@ -986,10 +1087,13 @@
                     </div>
                 </div>
                 <div class="details-section">
-                    <div class="details-title">Articles et Quantités Commandées</div>
+                    <div class="details-title">Articles et Livraisons</div>
                     <table style="margin-top:10px;">
-                        <thead><tr><th>Désignation</th><th style="text-align:center">Qté</th><th style="text-align:right">P.U</th><th style="text-align:right">Remise</th><th style="text-align:right">Total Ligne</th></tr></thead>
-                        <tbody>${v.items.map(i => `<tr><td>${i.name}</td><td style="text-align:center"><strong>${i.qty}</strong></td><td style="text-align:right">${Math.round(i.price).toLocaleString()}</td><td style="text-align:right">${i.rem}%</td><td style="text-align:right; font-weight:600;">${Math.round(i.qty * i.price * (1-i.rem/100)).toLocaleString()} FCFA</td></tr>`).join('')}</tbody>
+                        <thead><tr><th>Désignation</th><th style="text-align:center">Commandé</th><th style="text-align:center">Livré</th><th style="text-align:right">P.U</th><th style="text-align:right">Total Ligne</th></tr></thead>
+                        <tbody>${v.items.map((i, idx) => {
+                            const delivered = isDelivered ? v.deliveryInfo.items[idx].deliveredQty : '---';
+                            return `<tr><td>${i.name}</td><td style="text-align:center"><strong>${i.qty}</strong></td><td style="text-align:center; color:#16a34a"><strong>${delivered}</strong></td><td style="text-align:right">${Math.round(i.price).toLocaleString()}</td><td style="text-align:right; font-weight:600;">${Math.round(i.qty * i.price * (1-i.rem/100)).toLocaleString()} FCFA</td></tr>`;
+                        }).join('')}</tbody>
                     </table>
                 </div>
                 <div class="details-section">
@@ -1006,14 +1110,21 @@
         // --- GESTION ADMINISTRATIVE ---
         function updateSelects() {
             const famSel = document.getElementById('artFamily'); const subSel = document.getElementById('artSubFamily');
+            const drivSel = document.getElementById('deliveryDriverSelect');
             if(famSel) famSel.innerHTML = families.map(f => `<option value="${f}">${f}</option>`).join('');
             if(subSel) subSel.innerHTML = subfamilies.map(s => `<option value="${s}">${s}</option>`).join('');
+            if(drivSel) drivSel.innerHTML = '<option value="">-- Sélectionner un livreur --</option>' + drivers.map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
         function addListOption(selId, inpId, storageKey) {
             const val = document.getElementById(inpId).value.trim(); if(!val) return;
-            if(storageKey === 'families') families.push(val); else subfamilies.push(val);
-            localStorage.setItem(`crm_${storageKey}`, JSON.stringify(storageKey === 'families' ? families : subfamilies));
+            if(storageKey === 'families') families.push(val); 
+            else if(storageKey === 'subfamilies') subfamilies.push(val);
+            else if(storageKey === 'drivers') drivers.push(val);
+
+            localStorage.setItem(`crm_${storageKey}`, JSON.stringify(
+                storageKey === 'families' ? families : (storageKey === 'subfamilies' ? subfamilies : drivers)
+            ));
             document.getElementById(inpId).value = ""; updateSelects(); showToast("Liste mise à jour");
         }
 

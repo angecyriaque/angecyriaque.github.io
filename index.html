@@ -251,6 +251,12 @@
         .admin-code-box {
             background: #f8fafc; padding: 15px; border: 1px solid #e2e8f0; border-radius: 12px; margin-top: 15px;
         }
+
+        .btn-delete {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            padding: 5px 10px;
+            font-size: 0.75rem;
+        }
     </style>
 </head>
 <body>
@@ -662,10 +668,18 @@
         }
 
         function renderVentes(container, data) {
+            // Tri par date décroissante (plus récent d'abord)
             const sortedData = [...data].sort((a, b) => {
-                const numA = parseInt(a.num.split('-')[1]) || 0;
-                const numB = parseInt(b.num.split('-')[1]) || 0;
-                return numB - numA;
+                const dateA = new Date(a.date).getTime();
+                const dateB = new Date(b.date).getTime();
+                
+                // Si dates identiques, trier par numéro décroissant
+                if (dateB === dateA) {
+                    const numA = parseInt(a.num.split('-')[1]) || 0;
+                    const numB = parseInt(b.num.split('-')[1]) || 0;
+                    return numB - numA;
+                }
+                return dateB - dateA;
             });
 
             container.innerHTML = `
@@ -674,7 +688,7 @@
                         <thead>
                             <tr>
                                 <th>N° / Type</th>
-                                <th>Livraison souhaitée</th>
+                                <th>Date de livraison</th>
                                 <th>Client</th>
                                 <th>Total TTC</th>
                                 <th>Reste</th>
@@ -690,6 +704,7 @@
                                 const isSold = v.reste <= 0;
                                 const isFullyDelivered = checkIsFullyDelivered(v);
                                 const isPartiallyDelivered = checkIsPartiallyDelivered(v);
+                                const canBeDeleted = isQuote || (!isSold && !isPartiallyDelivered);
                                 
                                 return `
                                 <tr>
@@ -721,12 +736,14 @@
                                         ${isQuote ? `
                                             <button class="btn btn-convert" style="padding:5px 10px; font-size:0.75rem;" onclick="showVenteDetails('${v.id}')">Convertir</button>
                                             <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">Modifier</button>
+                                            <button class="btn btn-delete" onclick="deleteSale('${v.id}')">Suppr.</button>
                                         ` : `
                                             ${(!isFullyDelivered || !isSold) ? `
                                                 ${(!isSold && !isPartiallyDelivered) ? `
                                                     <button class="btn btn-edit-yellow" style="padding:5px 10px; font-size:0.75rem;" onclick="editSale('${v.id}')">
                                                         <i data-lucide="edit-3" size="14"></i> Modifier
                                                     </button>
+                                                    <button class="btn btn-delete" onclick="deleteSale('${v.id}')">Suppr.</button>
                                                 ` : ''}
                                                 
                                                 ${!isSold ? `
@@ -757,8 +774,15 @@
                 .filter(v => v.docType === type)
                 .map(v => parseInt(v.num.split('-')[1]) || 0);
             
-            const max = existingNums.length > 0 ? Math.max(...existingNums) : 1000;
-            return prefix + (max + 1);
+            // Pour garantir l'unicité même après suppression, on peut aussi stocker le dernier compteur utilisé
+            const lastCounterKey = `crm_last_count_${type}`;
+            const lastUsed = parseInt(localStorage.getItem(lastCounterKey)) || 1000;
+            
+            const maxExisting = existingNums.length > 0 ? Math.max(...existingNums) : 1000;
+            const nextVal = Math.max(maxExisting, lastUsed) + 1;
+            
+            localStorage.setItem(lastCounterKey, nextVal);
+            return prefix + nextVal;
         }
 
         // --- HELPERS LIVRAISON ---
@@ -861,6 +885,33 @@
             checkCreditAvailability();
             updateFacture();
             render();
+        }
+
+        function deleteSale(id) {
+            const idx = db.VENTE.findIndex(v => v.id === id);
+            const v = db.VENTE[idx];
+            
+            const isSold = v.reste <= 0;
+            const isPartiallyDelivered = checkIsPartiallyDelivered(v) || checkIsFullyDelivered(v);
+            
+            if (v.docType !== 'DEVIS' && (isSold || isPartiallyDelivered)) {
+                return showToast("Suppression impossible : Document déjà traité", "#ef4444");
+            }
+            
+            const confirmation = confirm(`Voulez-vous vraiment supprimer le document ${v.num} ?`);
+            if (confirmation) {
+                // Si c'est une facture, on rend le stock
+                if (v.docType !== 'DEVIS') {
+                    v.items.forEach(item => {
+                        const art = db.ARTICLE.find(a => a.id === item.id);
+                        if (art) art.stock += item.qty;
+                    });
+                }
+                db.VENTE.splice(idx, 1);
+                saveData();
+                render();
+                showToast("Document supprimé avec succès");
+            }
         }
 
         function checkCreditAvailability() {

@@ -921,6 +921,9 @@
 
         function showVenteDetails(id) {
             const v = db.VENTE.find(x => x.id === id);
+            // Récupération des infos client complètes
+            const c = db.CLIENT.find(cl => cl.id === v.clientId) || {};
+            
             const content = document.getElementById('venteDetailsContent');
             const totalPaye = (v.payments || []).reduce((s, p) => s + p.amount, 0);
             const dateLivraisonFinale = v.reste <= 0 ? (v.payments && v.payments.length ? v.payments[v.payments.length - 1].date : 'N/A') : 'En attente';
@@ -954,9 +957,15 @@
                         <div class="details-item"><span class="details-label">Mode de Règlement Global</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
                     </div>
                     <div class="details-section" style="margin-top:0;">
-                        <div class="details-title">Information Tiers</div>
-                        <div class="details-item"><span class="details-label">Client</span><span class="details-value">${v.clientName}</span></div>
-                        <div class="details-item"><span class="details-label">Statut Client</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
+                        <div class="details-title">Information Client</div>
+                        <div class="details-item"><span class="details-label">Nom / Raison Sociale</span><span class="details-value">${v.clientName}</span></div>
+                        <div class="details-item"><span class="details-label">Code Client</span><span class="details-value">${v.clientId}</span></div>
+                        <div class="details-item"><span class="details-label">Statut</span><span class="details-value"><span class="status-badge ${v.clientStatus === 'Abonné' ? 'status-subscriber' : 'status-occasional'}" style="font-size:0.6rem;">${v.clientStatus || 'N/A'}</span></span></div>
+                        <div class="details-item"><span class="details-label">Contact Principal</span><span class="details-value">${c.phone1 || 'Non renseigné'}</span></div>
+                        <div class="details-item"><span class="details-label">Contact Secondaire</span><span class="details-value">${c.phone2 || '-'}</span></div>
+                        <div class="details-item"><span class="details-label">Email</span><span class="details-value">${c.email || '-'}</span></div>
+                        <div class="details-item"><span class="details-label">Adresse Géo.</span><span class="details-value">${c.address || 'Non renseignée'}</span></div>
+                        <div class="details-item"><span class="details-label">Plafond Autorisé</span><span class="details-value">${c.limit ? Math.round(c.limit).toLocaleString() : '0'} FCFA</span></div>
                     </div>
                     <div class="details-section full">
                         <div class="details-title">Récapitulatif Financier</div>

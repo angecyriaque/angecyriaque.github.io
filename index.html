@@ -584,6 +584,9 @@
             const grid = document.getElementById('mainGrid');
             const dynamicButtons = document.getElementById('dynamic-buttons');
             
+            // Réinitialiser la recherche lors du changement d'onglet
+            document.getElementById('searchInput').value = "";
+
             if (view === 'VENTE') {
                 dynamicButtons.innerHTML = `<button class="btn" onclick="openSaleForm()"><i data-lucide="receipt"></i> FACTURE</button>`;
             } else {
@@ -645,6 +648,13 @@
         }
 
         function renderVentes(container, data) {
+            // Tri chronologique : plus récent au plus ancien basé sur ID (VTE-timestamp) ou num
+            const sortedData = [...data].sort((a, b) => {
+                const idA = a.id ? a.id.replace('VTE-', '') : 0;
+                const idB = b.id ? b.id.replace('VTE-', '') : 0;
+                return parseInt(idB) - parseInt(idA);
+            });
+
             container.innerHTML = `
                 <div class="card full" style="padding: 0; overflow-x: auto; grid-column: 1 / -1;">
                     <table>
@@ -661,8 +671,8 @@
                             </tr>
                         </thead>
                         <tbody>
-                            ${data.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
-                              data.map(v => {
+                            ${sortedData.length === 0 ? '<tr><td colspan="8" style="text-align:center; padding:2rem; opacity:0.5;">Aucune vente enregistrée.</td></tr>' : 
+                              sortedData.map(v => {
                                 const isSold = v.reste <= 0;
                                 const isFullyDelivered = checkIsFullyDelivered(v);
                                 const isPartiallyDelivered = checkIsPartiallyDelivered(v);
@@ -1283,10 +1293,33 @@
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function toggleLimitField() { const f = document.getElementById('formLimit'); const s = document.getElementById('formStatus').value; if(f) f.disabled = (s !== 'Abonné'); }
+        
         function filterData() {
-            const q = document.getElementById('searchInput').value.toLowerCase(); const data = db[currentView];
-            render(data.filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));
+            const q = document.getElementById('searchInput').value.toLowerCase().trim();
+            const data = db[currentView];
+            
+            if (currentView === 'VENTE') {
+                // Recherche spécifique pour les ventes : Nom, Num Facture, Statut Paiement, Statut Livraison
+                const filtered = data.filter(v => {
+                    const isFullyDelivered = checkIsFullyDelivered(v);
+                    const isPartiallyDelivered = checkIsPartiallyDelivered(v);
+                    const deliveryStatus = isFullyDelivered ? 'livré' : (isPartiallyDelivered ? 'partiel' : 'en attente');
+                    const paymentStatus = v.reste <= 0 ? 'soldé' : 'impayé';
+                    
+                    return (
+                        v.clientName.toLowerCase().includes(q) || 
+                        v.num.toLowerCase().includes(q) ||
+                        paymentStatus.includes(q) ||
+                        deliveryStatus.includes(q)
+                    );
+                });
+                render(filtered);
+            } else {
+                // Recherche standard pour les autres onglets
+                render(data.filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));
+            }
         }
+
         function exportData() {
             const list = db[currentView]; if(!list.length) return;
             let head, body;

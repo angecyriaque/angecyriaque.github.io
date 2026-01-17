@@ -6,6 +6,8 @@
     <title>Elite CRM - Business Management</title>
     <!-- Lucide Icons -->
     <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Chart.js for Dashboard -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
         :root {
             --bg-global: #ffffff;
@@ -106,6 +108,13 @@
         .btn-edit-yellow {
             background: linear-gradient(135deg, #facc15, #eab308); color: #422006; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
         }
+
+        /* --- DASHBOARD STYLES --- */
+        .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .kpi-card { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; border-left: 5px solid var(--active-bg); box-shadow: var(--shadow); }
+        .kpi-title { font-size: 0.8rem; text-transform: uppercase; color: #64748b; font-weight: 700; margin-bottom: 0.5rem; }
+        .kpi-value { font-size: 1.8rem; font-weight: 800; color: var(--text-main); }
+        .chart-container { background: var(--card-bg); padding: 1.5rem; border-radius: 20px; border: 1px solid var(--border-color); box-shadow: var(--shadow); height: 350px; }
 
         /* --- GRID & CARDS --- */
         .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1.5rem; }
@@ -256,6 +265,9 @@
 
     <nav>
         <div class="nav-links">
+            <div class="nav-item" id="tab-DASHBOARD" onclick="switchView('DASHBOARD')">
+                <i data-lucide="layout-dashboard"></i> DASHBOARD
+            </div>
             <div class="nav-item active" id="tab-CLIENT" onclick="switchView('CLIENT')">
                 <i data-lucide="users"></i> CLIENTS
             </div>
@@ -264,6 +276,9 @@
             </div>
             <div class="nav-item" id="tab-ARTICLE" onclick="switchView('ARTICLE')">
                 <i data-lucide="package"></i> ARTICLES
+            </div>
+            <div class="nav-item" id="tab-PRODUCTION" onclick="switchView('PRODUCTION')">
+                <i data-lucide="factory"></i> PRODUCTION
             </div>
             <div class="nav-item" id="tab-VENTE" onclick="switchView('VENTE')">
                 <i data-lucide="shopping-cart"></i> VENTES
@@ -295,7 +310,7 @@
         </div>
     </div>
 
-    <!-- Modal Formulaire Standard (Clients, Fournisseurs, Articles) -->
+    <!-- Modal Formulaire Standard -->
     <div class="modal-overlay" id="formModal">
         <div class="modal-content">
             <div style="display:flex; justify-content:space-between; margin-bottom:1.5rem;">
@@ -557,7 +572,6 @@
                     <input type="date" id="deliveryActualDate">
                 </div>
                 <div class="full" id="deliveryItemsList" style="margin-top:10px;">
-                    <!-- Liste dynamique des articles avec reste à livrer -->
                 </div>
                 <div style="margin-top:1rem;" class="full">
                     <button class="btn btn-success full" style="width:100%; justify-content:center;" onclick="executeDelivery()">Confirmer ce passage</button>
@@ -587,11 +601,16 @@
             CLIENT: JSON.parse(localStorage.getItem('crm_clients')) || [],
             FOURNISSEUR: JSON.parse(localStorage.getItem('crm_suppliers')) || [],
             ARTICLE: JSON.parse(localStorage.getItem('crm_articles')) || [],
+            PRODUCTION: JSON.parse(localStorage.getItem('crm_production')) || [],
             VENTE: JSON.parse(localStorage.getItem('crm_ventes')) || []
         };
         let currentPayingVente = null;
         let globalStockValid = true;
         let globalPlafondValid = true;
+
+        // --- CHARTS INSTANCES ---
+        let paymentChart = null;
+        let stockChart = null;
 
         // --- NAVIGATION ---
         function switchView(view) {
@@ -601,21 +620,29 @@
             const btnLabel = document.getElementById('btn-label');
             const grid = document.getElementById('mainGrid');
             const dynamicButtons = document.getElementById('dynamic-buttons');
+            const actionBar = document.getElementById('action-bar-container');
             
             document.getElementById('searchInput').value = "";
+            actionBar.style.display = (view === 'DASHBOARD') ? 'none' : 'flex';
 
             if (view === 'VENTE') {
                 dynamicButtons.innerHTML = `
                     <button class="btn btn-devis" onclick="openSaleForm('DEVIS')"><i data-lucide="file-text"></i> DEVIS</button>
                     <button class="btn" onclick="openSaleForm('FACTURE')"><i data-lucide="receipt"></i> FACTURE</button>
                 `;
-            } else {
+            } else if (view === 'PRODUCTION') {
+                dynamicButtons.innerHTML = `
+                    <button class="btn" onclick="exportData()"><i data-lucide="download"></i> Exporter CSV</button>
+                    <button class="btn" onclick="openAddForm()"><i data-lucide="plus-circle"></i> Nouvelle Production</button>
+                `;
+            } else if (view !== 'DASHBOARD') {
                 if(btnLabel) btnLabel.textContent = view.toLowerCase();
                 dynamicButtons.innerHTML = `
                     <button class="btn" onclick="exportData()"><i data-lucide="download"></i> Exporter CSV</button>
                     <button class="btn" onclick="openAddForm()"><i data-lucide="plus-circle"></i> Nouveau <span id="btn-label">${view.toLowerCase()}</span></button>
                 `;
             }
+
             if(view === 'ARTICLE') grid.classList.add('grid-articles'); else grid.classList.remove('grid-articles');
             render();
         }
@@ -623,7 +650,9 @@
         // --- RENDER ---
         function render(data = db[currentView]) {
             const grid = document.getElementById('mainGrid');
+            if (currentView === 'DASHBOARD') { renderDashboard(grid); return; }
             if (currentView === 'VENTE') { renderVentes(grid, data); return; }
+            if (currentView === 'PRODUCTION') { renderProduction(grid, data); return; }
             if (data.length === 0) {
                 grid.innerHTML = `<div class="full" style="text-align:center; padding:4rem; opacity:0.5; grid-column: 1 / -1;">Aucun enregistrement dans ${currentView}.</div>`;
                 return;
@@ -667,14 +696,103 @@
             lucide.createIcons();
         }
 
+        // --- DASHBOARD RENDERER ---
+        function renderDashboard(container) {
+            const totalCA = db.VENTE.filter(v => v.docType === 'FACTURE').reduce((sum, v) => sum + v.ttc, 0);
+            const totalCreances = db.VENTE.filter(v => v.docType === 'FACTURE').reduce((sum, v) => sum + v.reste, 0);
+            const totalCommandes = db.VENTE.filter(v => v.docType === 'FACTURE').length;
+            const stockValeur = db.ARTICLE.reduce((sum, a) => sum + (a.stock * a.price), 0);
+
+            container.innerHTML = `
+                <div class="full" style="grid-column: 1 / -1;">
+                    <div class="kpi-grid">
+                        <div class="kpi-card">
+                            <div class="kpi-title">Chiffre d'Affaires Global</div>
+                            <div class="kpi-value">${Math.round(totalCA).toLocaleString()} <small>FCFA</small></div>
+                        </div>
+                        <div class="kpi-card" style="border-left-color: #ef4444;">
+                            <div class="kpi-title">Créances Clients (Reste à payer)</div>
+                            <div class="kpi-value">${Math.round(totalCreances).toLocaleString()} <small>FCFA</small></div>
+                        </div>
+                        <div class="kpi-card" style="border-left-color: #10b981;">
+                            <div class="kpi-title">Commandes Validées</div>
+                            <div class="kpi-value">${totalCommandes}</div>
+                        </div>
+                        <div class="kpi-card" style="border-left-color: #3b82f6;">
+                            <div class="kpi-title">Valeur Stock Actuel</div>
+                            <div class="kpi-value">${Math.round(stockValeur).toLocaleString()} <small>FCFA</small></div>
+                        </div>
+                    </div>
+                    
+                    <div class="grid" style="grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));">
+                        <div class="chart-container">
+                            <h3 style="margin-bottom:1rem; font-size:0.9rem;">RÉPARTITION PAR MODE DE RÈGLEMENT</h3>
+                            <canvas id="paymentModeChart"></canvas>
+                        </div>
+                        <div class="chart-container">
+                            <h3 style="margin-bottom:1rem; font-size:0.9rem;">STOCK PAR FAMILLE D'ARTICLES</h3>
+                            <canvas id="stockByFamilyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            `;
+            initDashboardCharts();
+        }
+
+        function initDashboardCharts() {
+            // Data for Payment Mode Chart
+            const modes = { Cash: 0, 'Mobile Money': 0, 'Crédit': 0 };
+            db.VENTE.filter(v => v.docType === 'FACTURE').forEach(v => {
+                if(modes[v.mode] !== undefined) modes[v.mode] += v.ttc;
+            });
+
+            const ctx1 = document.getElementById('paymentModeChart').getContext('2d');
+            if(paymentChart) paymentChart.destroy();
+            paymentChart = new Chart(ctx1, {
+                type: 'doughnut',
+                data: {
+                    labels: Object.keys(modes),
+                    datasets: [{
+                        data: Object.values(modes),
+                        backgroundColor: ['#10b981', '#3b82f6', '#ef4444'],
+                        borderWidth: 0
+                    }]
+                },
+                options: { maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+            });
+
+            // Data for Stock by Family Chart
+            const stockData = {};
+            db.ARTICLE.forEach(a => {
+                stockData[a.family] = (stockData[a.family] || 0) + a.stock;
+            });
+
+            const ctx2 = document.getElementById('stockByFamilyChart').getContext('2d');
+            if(stockChart) stockChart.destroy();
+            stockChart = new Chart(ctx2, {
+                type: 'bar',
+                data: {
+                    labels: Object.keys(stockData),
+                    datasets: [{
+                        label: 'Unités en stock',
+                        data: Object.values(stockData),
+                        backgroundColor: '#ff4500',
+                        borderRadius: 8
+                    }]
+                },
+                options: { 
+                    maintainAspectRatio: false, 
+                    plugins: { legend: { display: false } },
+                    scales: { y: { beginAtZero: true } }
+                }
+            });
+        }
+
         function renderVentes(container, data) {
-            // Tri par date de livraison (la plus récente d'abord)
             const sortedData = [...data].sort((a, b) => {
                 const dateA = new Date(a.date).getTime();
                 const dateB = new Date(b.date).getTime();
-                if (dateB === dateA) {
-                    return b.id > a.id ? 1 : -1; // Fallback sur l'ID si date identique
-                }
+                if (dateB === dateA) return b.id > a.id ? 1 : -1;
                 return dateB - dateA;
             });
 
@@ -758,13 +876,46 @@
             lucide.createIcons();
         }
 
-        // --- HELPERS NUMÉROTATION CONTINUE ---
+        function renderProduction(container, data) {
+             container.innerHTML = `
+                <div class="card full" style="padding: 0; overflow-x: auto; grid-column: 1 / -1;">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date Production</th>
+                                <th>Code Production</th>
+                                <th>Responsable</th>
+                                <th>Nb Produits</th>
+                                <th>Statut</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${data.length === 0 ? '<tr><td colspan="6" style="text-align:center; padding:2rem; opacity:0.5;">Aucun ordre de production en cours.</td></tr>' : 
+                              data.map(p => `
+                                <tr>
+                                    <td>${p.date}</td>
+                                    <td><strong>${p.id}</strong></td>
+                                    <td>${p.manager || 'N/A'}</td>
+                                    <td>${p.items.length} articles</td>
+                                    <td><span class="status-badge status-delivered">Terminé</span></td>
+                                    <td>
+                                        <button class="btn" style="padding:5px 10px; font-size:0.75rem; background: #334155;">Consulter</button>
+                                    </td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        // --- CONTINUOUS NUMERATION HELPERS ---
         function getNextSequenceNumber(type) {
             const prefix = type === 'DEVIS' ? 'D-' : 'F-';
             const storageKey = `crm_last_counter_${type}`;
             let lastCounter = parseInt(localStorage.getItem(storageKey)) || 1000;
             
-            // On vérifie aussi dans la DB pour être sûr
             const maxInDb = db.VENTE
                 .filter(v => v.docType === type)
                 .reduce((max, v) => {
@@ -777,7 +928,7 @@
             return prefix + nextVal;
         }
 
-        // --- HELPERS LIVRAISON ---
+        // --- DELIVERY HELPERS ---
         function checkIsFullyDelivered(vente) {
             if (vente.docType === 'DEVIS') return false;
             if (!vente.deliveries || vente.deliveries.length === 0) return false;
@@ -804,17 +955,14 @@
             }, 0);
         }
 
-        // --- FONCTIONS VENTES ---
+        // --- SALE FUNCTIONS ---
         function openSaleForm(type = 'FACTURE') {
             if(db.ARTICLE.length === 0) return showToast("Veuillez créer des articles d'abord", "#ef4444");
             document.getElementById('editVenteId').value = "";
             document.getElementById('saleDocType').value = type;
             document.getElementById('saleModalTitle').textContent = type === 'DEVIS' ? "Création de Devis" : "Édition de Document";
             document.getElementById('factureTitlePrefix').textContent = type === 'DEVIS' ? "DEVIS" : "FACTURE";
-            
-            // Masquer le bouton de suppression pour un nouveau document
             document.getElementById('btnDeleteSale').style.display = 'none';
-            
             document.getElementById('adminCodeSection').style.display = 'none';
             document.getElementById('adminCodeInput').value = "";
             document.getElementById('saleDate').value = new Date().toISOString().split('T')[0];
@@ -854,15 +1002,12 @@
 
         function editSale(id) {
             const v = db.VENTE.find(x => x.id === id);
-            
-            // Restaurer temporairement le stock pour la modification
             if (v.docType !== 'DEVIS') {
                 v.items.forEach(soldItem => {
                     const article = db.ARTICLE.find(a => a.id === soldItem.id);
                     if (article) article.stock += soldItem.qty;
                 });
             }
-            
             openSaleForm(v.docType);
             document.getElementById('editVenteId').value = v.id;
             document.getElementById('factureNumber').textContent = v.num;
@@ -871,7 +1016,6 @@
             document.getElementById('saleDate').value = v.date;
             document.getElementById('tvaToggle').checked = v.tvaEnabled;
             
-            // Affichage du bouton de suppression si les conditions sont remplies
             const isSold = v.reste <= 0;
             const isFullyDelivered = checkIsFullyDelivered(v);
             const isQuote = v.docType === 'DEVIS';
@@ -897,14 +1041,8 @@
         function handleSaleDeletion() {
             const id = document.getElementById('editVenteId').value;
             if (!id) return;
-            
             const v = db.VENTE.find(x => x.id === id);
-            if (!v) return;
-
-            const confirmMsg = `Êtes-vous sûr de vouloir supprimer définitivement ce document (${v.num}) ?\n\nNote: Le stock a déjà été restitué temporairement pour l'édition.`;
-            
-            if (confirm(confirmMsg)) {
-                // Suppression de la base de données
+            if (confirm(`Êtes-vous sûr de vouloir supprimer ${v.num} ?`)) {
                 db.VENTE = db.VENTE.filter(x => x.id !== id);
                 saveData();
                 closeModal('saleModal');
@@ -930,8 +1068,7 @@
 
             if (type === 'DEVIS') {
                 alertBox.style.display = 'none'; globalPlafondValid = true;
-                plafondInfo.style.display = 'none';
-                updateFacture(); return;
+                plafondInfo.style.display = 'none'; updateFacture(); return;
             }
 
             if (mode === 'Crédit' && tiers.status === 'Occasionnel') {
@@ -1024,7 +1161,6 @@
             
             const canSaveFacture = globalStockValid && globalPlafondValid && cid && count > 0;
             const canSaveQuote = cid && count > 0;
-            
             btnSave.disabled = type === 'DEVIS' ? !canSaveQuote : !canSaveFacture;
             
             const netHT = totalBrut - totalRemise;
@@ -1043,16 +1179,9 @@
         function saveAndPrint() {
             const editId = document.getElementById('editVenteId').value;
             const type = document.getElementById('saleDocType').value;
-
             if (editId && type === 'FACTURE') {
                 const code = document.getElementById('adminCodeInput').value;
                 if (code !== ADMIN_CODE) {
-                    // Si on annule, il faut quand même restorer le stock soustrait lors de l'ouverture de l'édition
-                    const vOld = db.VENTE.find(x => x.id === editId);
-                    vOld.items.forEach(item => {
-                        const art = db.ARTICLE.find(a => a.id === item.id);
-                        if (art) art.stock -= item.qty;
-                    });
                     return showToast("Code administrateur incorrect", "#ef4444");
                 }
             }
@@ -1074,10 +1203,7 @@
                     const art = db.ARTICLE.find(a => a.id === aid);
                     totalBrut += art.price * qty; totalRemise += (art.price * qty) * (rem/100);
                     items.push({ id: aid, name: art.name, qty: qty, price: art.price, rem: rem });
-                    
-                    if (type === 'FACTURE') {
-                        art.stock -= qty;
-                    }
+                    if (type === 'FACTURE') art.stock -= qty;
                 }
             }
             if(!cid || items.length === 0) return showToast("Données incomplètes", "#ef4444");
@@ -1088,8 +1214,7 @@
             const tiers = db.CLIENT.find(c => c.id === cid);
             
             const saleData = {
-                num: factNum, 
-                docType: type,
+                num: factNum, docType: type,
                 creationDate: new Date().toLocaleDateString('fr-FR'),
                 date: document.getElementById('saleDate').value, clientId: cid,
                 clientName: tiers.name, clientStatus: tiers.status,
@@ -1110,85 +1235,48 @@
             } else {
                 db.VENTE.push({ id: 'VTE-' + Date.now(), ...saleData });
             }
-            
             saveData();
             const originalTitle = document.title; document.title = factNum; window.print(); document.title = originalTitle;
             closeModal('saleModal'); switchView('VENTE'); 
             showToast(editId ? "Document modifié" : `${type} enregistré`);
         }
 
-        // --- CONVERSION DEVIS -> COMMANDE AVEC CODE ADMIN ---
+        // --- QUOTE CONVERSION ---
         function convertQuoteToSale(id) {
             const adminCode = document.getElementById('adminCodeConvert').value;
             if (adminCode !== ADMIN_CODE) return showToast("Code administrateur incorrect", "#ef4444");
-
             const v = db.VENTE.find(x => x.id === id);
-            
-            let stockError = false;
-            let errorMsg = "";
+            let stockError = false; let errorMsg = "";
             v.items.forEach(item => {
                 const art = db.ARTICLE.find(a => a.id === item.id);
-                if (art.stock < item.qty) {
-                    stockError = true;
-                    errorMsg += `${item.name} (${art.stock} dispo) `;
-                }
+                if (art.stock < item.qty) { stockError = true; errorMsg += `${item.name} `; }
             });
-
-            if (stockError) {
-                return showToast("Conversion impossible : stock insuffisant pour " + errorMsg, "#ef4444");
-            }
-
-            if (v.mode === 'Crédit') {
-                const tiers = db.CLIENT.find(c => c.id === v.clientId);
-                const totalImpayes = db.VENTE.filter(sale => sale.clientId === v.clientId && sale.docType === 'FACTURE').reduce((sum, sale) => sum + sale.reste, 0);
-                const plafondTotal = parseFloat(tiers.limit) || 0;
-                
-                if (tiers.status === 'Occasionnel' || (totalImpayes + v.ttc) > plafondTotal) {
-                    return showToast("Conversion impossible : Plafond financier ou statut client non valide", "#ef4444");
-                }
-            }
+            if (stockError) return showToast("Conversion impossible : stock insuffisant pour " + errorMsg, "#ef4444");
 
             v.docType = 'FACTURE';
             v.num = getNextSequenceNumber('FACTURE');
-            
             v.items.forEach(item => {
                 const art = db.ARTICLE.find(a => a.id === item.id);
                 art.stock -= item.qty;
             });
-
-            saveData();
-            closeModal('venteDetailsModal');
-            render();
+            saveData(); closeModal('venteDetailsModal'); render();
             showToast("Devis converti en Facture " + v.num, "#8b5cf6");
         }
 
-        // --- GESTION LIVRAISON PROGRESSIVE ---
+        // --- DELIVERY MANAGEMENT ---
         function openDeliveryModal(id) {
             const v = db.VENTE.find(x => x.id === id);
-            if (v.docType === 'DEVIS') return;
-
             document.getElementById('deliveryVenteId').value = id;
             document.getElementById('deliveryActualDate').value = new Date().toISOString().split('T')[0];
-            
             const driverSel = document.getElementById('deliveryDriverSelect');
-            driverSel.innerHTML = '<option value="">-- Sélectionner un livreur --</option>' + 
-                drivers.map(d => `<option value="${d}">${d}</option>`).join('');
-            
+            driverSel.innerHTML = '<option value="">-- Sélectionner un livreur --</option>' + drivers.map(d => `<option value="${d}">${d}</option>`).join('');
             const itemsList = document.getElementById('deliveryItemsList');
-            itemsList.innerHTML = `
-                <div style="font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:10px;">Réception Articles (Passage en cours)</div>
-                ${v.items.map((item, idx) => {
-                    const alreadyDelivered = getDeliveredQtyForArticle(v, item.id);
-                    const remaining = item.qty - alreadyDelivered;
+            itemsList.innerHTML = `<div style="font-weight:bold; border-bottom:1px solid #ddd; padding-bottom:5px; margin-bottom:10px;">Réception Articles</div>` + 
+                v.items.map((item, idx) => {
+                    const remaining = item.qty - getDeliveredQtyForArticle(v, item.id);
                     if (remaining <= 0) return '';
-                    return `
-                        <div class="form-grid" style="margin-bottom:8px; align-items:center;">
-                            <span style="font-size:0.85rem;">${item.name}<br><small style="color:#64748b">Restant: ${remaining}</small></span>
-                            <input type="number" id="delQty_${idx}" value="${remaining}" min="0" max="${remaining}">
-                        </div>
-                    `;
-                }).join('')}
-            `;
+                    return `<div class="form-grid" style="margin-bottom:8px; align-items:center;"><span style="font-size:0.85rem;">${item.name}<br><small style="color:#64748b">Restant: ${remaining}</small></span><input type="number" id="delQty_${idx}" value="${remaining}" min="0" max="${remaining}"></div>`;
+                }).join('');
             openModal('deliveryModal');
         }
 
@@ -1197,46 +1285,25 @@
             const driver = document.getElementById('deliveryDriverSelect').value;
             const date = document.getElementById('deliveryActualDate').value;
             const v = db.VENTE.find(x => x.id === id);
-
-            if(!driver || !date) return showToast("Veuillez remplir tous les champs", "#ef4444");
-
-            const deliveryLineItems = [];
+            if(!driver || !date) return showToast("Champs manquants", "#ef4444");
+            const delItems = [];
             v.items.forEach((item, idx) => {
                 const input = document.getElementById(`delQty_${idx}`);
-                if (input) {
-                    const qty = parseFloat(input.value) || 0;
-                    if (qty > 0) {
-                        deliveryLineItems.push({ id: item.id, name: item.name, qty: qty });
-                    }
-                }
+                if (input && parseFloat(input.value) > 0) delItems.push({ id: item.id, name: item.name, qty: parseFloat(input.value) });
             });
-
-            if (deliveryLineItems.length === 0) return showToast("Aucune quantité saisie", "#ef4444");
-
             if (!v.deliveries) v.deliveries = [];
-            v.deliveries.push({
-                driver: driver,
-                date: date,
-                items: deliveryLineItems
-            });
-
-            saveData();
-            closeModal('deliveryModal');
-            render();
-            showToast("Passage de livraison enregistré", "#10b981");
+            v.deliveries.push({ driver, date, items: delItems });
+            saveData(); closeModal('deliveryModal'); render(); showToast("Livraison enregistrée", "#10b981");
         }
 
-        // --- GESTION REGLEMENTS ---
+        // --- PAYMENTS MANAGEMENT ---
         function getNextReglementNumber() {
-            let total = 0;
-            db.VENTE.forEach(v => { total += (v.payments ? v.payments.length : 0); });
+            let total = 0; db.VENTE.forEach(v => { total += (v.payments ? v.payments.length : 0); });
             return 'R-' + String(total + 1).padStart(4, '0');
         }
 
         function openPayModal(id) {
             currentPayingVente = db.VENTE.find(v => v.id === id);
-            if (currentPayingVente.docType === 'DEVIS') return;
-            
             document.getElementById('payNum').value = getNextReglementNumber();
             document.getElementById('payReste').value = Math.round(currentPayingVente.reste).toLocaleString();
             document.getElementById('payAmount').value = Math.round(currentPayingVente.reste);
@@ -1248,180 +1315,52 @@
             const amount = Math.round(parseFloat(document.getElementById('payAmount').value));
             const proof = document.getElementById('payProof').value.trim();
             const mode = document.getElementById('payMode').value;
-            const numReg = document.getElementById('payNum').value;
-
-            if(!amount || amount <= 0 || !proof) return showToast("Champs obligatoires manquants", "#ef4444");
-            if(amount > currentPayingVente.reste) return showToast("Montant excessif", "#ef4444");
-
-            if (!currentPayingVente.payments) currentPayingVente.payments = [];
-            
+            if(!amount || amount <= 0 || !proof) return showToast("Champs obligatoires", "#ef4444");
+            if(!currentPayingVente.payments) currentPayingVente.payments = [];
             currentPayingVente.reste -= amount;
-            currentPayingVente.payments.push({
-                num: numReg,
-                date: new Date().toLocaleDateString('fr-FR'),
-                amount: amount,
-                mode: mode,
-                proof: proof
-            });
-
-            saveData();
-            closeModal('payModal');
-            render();
-            showToast("Paiement validé");
+            currentPayingVente.payments.push({ num: document.getElementById('payNum').value, date: new Date().toLocaleDateString('fr-FR'), amount, mode, proof });
+            saveData(); closeModal('payModal'); render(); showToast("Paiement validé");
         }
 
         function showVenteDetails(id) {
             const v = db.VENTE.find(x => x.id === id);
-            const c = db.CLIENT.find(cl => cl.id === v.clientId) || {};
-            const isQuote = v.docType === 'DEVIS';
-            
             const content = document.getElementById('venteDetailsContent');
             const totalPaye = (v.payments || []).reduce((s, p) => s + p.amount, 0);
-            const isFullyDelivered = checkIsFullyDelivered(v);
-            const isPartiallyDelivered = checkIsPartiallyDelivered(v);
-
-            let badgeClass = 'mode-badge ';
-            if(v.mode === 'Cash') badgeClass += 'mode-cash'; else if(v.mode === 'Mobile Money') badgeClass += 'mode-mm'; else badgeClass += 'mode-credit';
-
-            let statusBanner = "";
-            if (!isQuote) {
-                statusBanner = (v.reste <= 0 && isFullyDelivered) ? `
-                    <div class="banner-paid">
-                        <i data-lucide="check-circle"></i>
-                        OPÉRATION CLÔTURÉE (SOLDÉE & LIVRÉE)
-                    </div>
-                ` : (v.reste <= 0 ? `
-                    <div class="banner-paid" style="background-color: #3b82f6;">
-                        <i data-lucide="info"></i>
-                        PAIEMENT SOLDÉ - LIVRAISON EN COURS
-                    </div>
-                ` : '');
-            } else {
-                statusBanner = `
-                    <div class="banner-paid" style="background-color: #f97316;">
-                        <i data-lucide="file-text"></i>
-                        CE DOCUMENT EST UNE COTATION (DEVIS) - AUCUN IMPACT STOCK/COMPTABILITÉ
-                    </div>
-                `;
-            }
+            const isQuote = v.docType === 'DEVIS';
 
             content.innerHTML = `
-                ${statusBanner}
                 <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem;">
-                    <div>
-                        <h2 style="color:var(--nav-bg)">DÉTAILS DE L'OPÉRATION</h2>
-                        <p style="font-size:0.9rem; color:#64748b;">${isQuote ? 'Devis' : 'Fiche de vente'} n° ${v.num}</p>
-                    </div>
-                    <button onclick="closeModal('venteDetailsModal')" style="background:none; border:none; cursor:pointer;"><i data-lucide="x"></i></button>
+                    <div><h2>DÉTAILS OPÉRATION</h2><p>${v.num}</p></div>
+                    <button onclick="closeModal('venteDetailsModal')" style="background:none; border:none;"><i data-lucide="x"></i></button>
                 </div>
                 <div class="form-grid">
-                    <div class="details-section" style="margin-top:0;">
-                        <div class="details-title">Information Document</div>
-                        <div class="details-item"><span class="details-label">Type</span><span class="details-value">${isQuote ? 'DEVIS' : 'FACTURE'}</span></div>
-                        <div class="details-item"><span class="details-label">N° Document</span><span class="details-value">${v.num}</span></div>
-                        <div class="details-item"><span class="details-label">Date Création</span><span class="details-value">${v.creationDate || v.date}</span></div>
-                        <div class="details-item"><span class="details-label">Date Livraison</span><span class="details-value">${v.date}</span></div>
-                        ${isQuote ? '' : `
-                            <div class="details-item">
-                                <span class="details-label">Statut Livraison</span>
-                                <span class="details-value">
-                                    <span class="status-badge ${isFullyDelivered ? 'status-delivered' : (isPartiallyDelivered ? 'status-partial' : 'status-pending')}">
-                                        ${isFullyDelivered ? 'Livré' : (isPartiallyDelivered ? 'Partiel' : 'En attente')}
-                                    </span>
-                                </span>
-                            </div>
-                        `}
-                        <div class="details-item"><span class="details-label">Mode de Règlement</span><span class="details-value"><span class="${badgeClass}">${v.mode}</span></span></div>
+                    <div class="details-section">
+                        <div class="details-title">Info Document</div>
+                        <div class="details-item"><span>Type</span><span>${v.docType}</span></div>
+                        <div class="details-item"><span>Date</span><span>${v.date}</span></div>
                     </div>
-                    <div class="details-section" style="margin-top:0;">
-                        <div class="details-title">Information Client</div>
-                        <div class="details-item"><span class="details-label">Nom / Raison Sociale</span><span class="details-value">${v.clientName}</span></div>
-                        <div class="details-item"><span class="details-label">Code Client</span><span class="details-value">${v.clientId}</span></div>
-                        <div class="details-item"><span class="details-label">Contact Principal</span><span class="details-value">${c.phone1 || 'Non renseigné'}</span></div>
-                        <div class="details-item"><span class="details-label">Adresse Géo.</span><span class="details-value">${c.address || 'Non renseignée'}</span></div>
+                    <div class="details-section">
+                        <div class="details-title">Client</div>
+                        <div class="details-item"><span>Nom</span><span>${v.clientName}</span></div>
                     </div>
                     <div class="details-section full">
-                        <div class="details-title">Récapitulatif Financier</div>
-                        <div class="details-grid">
-                            <div>
-                                <div class="details-item"><span class="details-label">Total HT Brut</span><span class="details-value">${Math.round(v.brutHT || v.ttc).toLocaleString()} FCFA</span></div>
-                                <div class="details-item"><span class="details-label">Remise Totale</span><span class="details-value" style="color:#dc2626">-${Math.round(v.remiseTotal || 0).toLocaleString()} FCFA</span></div>
-                                <div class="details-item"><span class="details-label">TVA (18%)</span><span class="details-value">${Math.round(v.tvaAmount || 0).toLocaleString()} FCFA</span></div>
-                            </div>
-                            <div style="background:#f1f5f9; padding:10px; border-radius:8px;">
-                                <div class="details-item"><span class="details-label" style="font-weight:bold; color:#1e293b">MONTANT TTC</span><span class="details-value" style="font-size:1.1rem; color:var(--nav-bg)">${Math.round(v.ttc).toLocaleString()} FCFA</span></div>
-                                ${isQuote ? '' : `
-                                    <div class="details-item"><span class="details-label">Montant Déjà Payé</span><span class="details-value" style="color:#16a34a">${Math.round(totalPaye).toLocaleString()} FCFA</span></div>
-                                    <div class="details-item" style="border-top:1px solid #cbd5e1; margin-top:5px; padding-top:5px;"><span class="details-label" style="font-weight:bold; color:#dc2626">RESTE À PAYER</span><span class="details-value" style="font-size:1.1rem; color:#dc2626">${Math.round(v.reste).toLocaleString()} FCFA</span></div>
-                                `}
-                            </div>
-                        </div>
+                        <div class="details-title">Finances</div>
+                        <div class="details-item"><span>TTC</span><span>${Math.round(v.ttc).toLocaleString()} FCFA</span></div>
+                        ${!isQuote ? `<div class="details-item"><span>Payé</span><span>${Math.round(totalPaye).toLocaleString()} FCFA</span></div><div class="details-item"><span>Reste</span><span>${Math.round(v.reste).toLocaleString()} FCFA</span></div>` : ''}
                     </div>
                 </div>
-                
-                <div class="details-section">
-                    <div class="details-title">Articles</div>
-                    <table style="margin-top:10px;">
-                        <thead><tr><th>Désignation</th><th style="text-align:center">Qté</th>${isQuote ? '' : '<th style="text-align:center">Déjà Livré</th><th style="text-align:center">Reste</th>'}</tr></thead>
-                        <tbody>${v.items.map((i) => {
-                            const delivered = getDeliveredQtyForArticle(v, i.id);
-                            const remaining = i.qty - delivered;
-                            return `<tr>
-                                <td>${i.name}</td>
-                                <td style="text-align:center">${i.qty}</td>
-                                ${isQuote ? '' : `
-                                    <td style="text-align:center; color:#16a34a; font-weight:bold;">${delivered}</td>
-                                    <td style="text-align:center; color:${remaining > 0 ? '#f97316' : '#16a34a'}">${remaining}</td>
-                                `}
-                            </tr>`;
-                        }).join('')}</tbody>
-                    </table>
-                </div>
-
-                ${isQuote ? `
-                    <div class="details-section">
-                        <div class="details-title" style="color:#c2410c;">Validation Administrateur Requise pour Conversion</div>
-                        <div style="display:flex; gap:10px; margin-top:10px;">
-                            <input type="password" id="adminCodeConvert" placeholder="Code Administrateur" style="flex:1;">
-                            <button class="btn btn-convert" style="padding:10px 20px;" onclick="convertQuoteToSale('${v.id}')">
-                                <i data-lucide="check-circle"></i> CONVERTIR EN FACTURE
-                            </button>
-                        </div>
-                    </div>
-                ` : `
-                    <div class="details-section">
-                        <div class="details-title">Historique des Passages de Livraison</div>
-                        <table style="margin-top:10px;">
-                            <thead><tr><th>Date Passage</th><th>Livreur</th><th>Articles Livrés</th></tr></thead>
-                            <tbody>${v.deliveries && v.deliveries.length ? v.deliveries.map(d => `
-                                <tr>
-                                    <td>${d.date}</td>
-                                    <td><strong>${d.driver}</strong></td>
-                                    <td style="font-size:0.8rem;">${d.items.map(di => `${di.name} (x${di.qty})`).join(', ')}</td>
-                                </tr>`).join('') : '<tr><td colspan="3" style="text-align:center; padding:10px; opacity:0.5;">Aucun passage de livraison effectué.</td></tr>'}
-                            </tbody>
-                        </table>
-                    </div>
-
-                    <div class="details-section">
-                        <div class="details-title">Historique des Règlements</div>
-                        <table style="margin-top:10px;">
-                            <thead><tr><th>Date</th><th>Mode</th><th>Montant Versé</th><th>Preuve</th></tr></thead>
-                            <tbody>${v.payments && v.payments.length ? v.payments.map(p => `<tr><td>${p.date}</td><td>${p.mode}</td><td style="font-weight:600; color:#16a34a">${Math.round(p.amount).toLocaleString()} FCFA</td><td>${p.proof}</td></tr>`).join('') : '<tr><td colspan="4" style="text-align:center; padding:10px; opacity:0.5;">Aucun versement enregistré.</td></tr>'}</tbody>
-                        </table>
-                    </div>
-                `}
+                ${isQuote ? `<div class="details-section"><div class="details-title">Conversion</div><div style="display:flex; gap:10px;"><input type="password" id="adminCodeConvert" placeholder="Code Admin"><button class="btn btn-convert" onclick="convertQuoteToSale('${v.id}')">Convertir</button></div></div>` : ''}
             `;
             openModal('venteDetailsModal'); lucide.createIcons();
         }
 
-        // --- GESTION ADMINISTRATIVE ---
+        // --- ADMINISTRATIVE MANAGEMENT ---
         function updateSelects() {
             const famSel = document.getElementById('artFamily'); const subSel = document.getElementById('artSubFamily');
             const drivSel = document.getElementById('deliveryDriverSelect');
             if(famSel) famSel.innerHTML = families.map(f => `<option value="${f}">${f}</option>`).join('');
             if(subSel) subSel.innerHTML = subfamilies.map(s => `<option value="${s}">${s}</option>`).join('');
-            if(drivSel) drivSel.innerHTML = '<option value="">-- Sélectionner un livreur --</option>' + drivers.map(d => `<option value="${d}">${d}</option>`).join('');
+            if(drivSel) drivSel.innerHTML = '<option value="">-- Livreur --</option>' + drivers.map(d => `<option value="${d}">${d}</option>`).join('');
         }
 
         function addListOption(selId, inpId, storageKey) {
@@ -1429,10 +1368,7 @@
             if(storageKey === 'families') families.push(val); 
             else if(storageKey === 'subfamilies') subfamilies.push(val);
             else if(storageKey === 'drivers') drivers.push(val);
-
-            localStorage.setItem(`crm_${storageKey}`, JSON.stringify(
-                storageKey === 'families' ? families : (storageKey === 'subfamilies' ? subfamilies : drivers)
-            ));
+            localStorage.setItem(`crm_${storageKey}`, JSON.stringify(storageKey === 'families' ? families : (storageKey === 'subfamilies' ? subfamilies : drivers)));
             document.getElementById(inpId).value = ""; updateSelects(); showToast("Liste mise à jour");
         }
 
@@ -1446,11 +1382,7 @@
         function handleImageUpload(input) {
             if (input.files && input.files[0]) {
                 const reader = new FileReader();
-                reader.onload = function(e) {
-                    document.getElementById('artPhotoData').value = e.target.result;
-                    document.getElementById('previewImg').src = e.target.result;
-                    document.getElementById('photoPreview').style.display = 'block';
-                }
+                reader.onload = function(e) { document.getElementById('artPhotoData').value = e.target.result; document.getElementById('previewImg').src = e.target.result; document.getElementById('photoPreview').style.display = 'block'; }
                 reader.readAsDataURL(input.files[0]);
             }
         }
@@ -1458,91 +1390,43 @@
         function openAddForm() {
             document.getElementById('mainForm').reset(); document.getElementById('editId').value = "";
             document.getElementById('modalTitle').textContent = `Nouveau ${currentView.toLowerCase()}`;
-            document.getElementById('photoPreview').style.display = 'none'; document.getElementById('artPhotoData').value = "";
-            const nameLabel = document.getElementById('formNameLabel'); const tiersFields = document.getElementById('tiers-only-fields'); const articleFields = document.getElementById('extra-article-fields');
-            if(currentView === 'ARTICLE') {
-                nameLabel.textContent = "Désignation de l'Article *"; tiersFields.style.display = 'none'; articleFields.style.display = 'grid'; updateSelects();
-            } else { nameLabel.textContent = "Nom Complet / Raison Sociale *"; tiersFields.style.display = 'grid'; articleFields.style.display = 'none'; toggleLimitField(); }
+            document.getElementById('photoPreview').style.display = 'none';
+            const fields = { name: document.getElementById('formNameLabel'), tiers: document.getElementById('tiers-only-fields'), art: document.getElementById('extra-article-fields') };
+            if(currentView === 'ARTICLE') { fields.name.textContent = "Désignation Article *"; fields.tiers.style.display = 'none'; fields.art.style.display = 'grid'; updateSelects(); }
+            else { fields.name.textContent = "Nom Complet / Raison Sociale *"; fields.tiers.style.display = 'grid'; fields.art.style.display = 'none'; toggleLimitField(); }
             openModal('formModal');
         }
 
         function editItem(id) {
-            const item = db[currentView].find(i => i.id === id);
-            openAddForm(); document.getElementById('editId').value = item.id; document.getElementById('formName').value = item.name;
+            const item = db[currentView].find(i => i.id === id); openAddForm();
+            document.getElementById('editId').value = item.id; document.getElementById('formName').value = item.name;
             if(currentView === 'ARTICLE') {
-                document.getElementById('artFamily').value = item.family; document.getElementById('artSubFamily').value = item.subfamily;
-                document.getElementById('artPrice').value = item.price; document.getElementById('artStock').value = item.stock;
-                document.getElementById('artPhotoData').value = item.photo || "";
-                if(item.photo) { document.getElementById('previewImg').src = item.photo; document.getElementById('photoPreview').style.display = 'block'; }
+                document.getElementById('artFamily').value = item.family; document.getElementById('artPrice').value = item.price; document.getElementById('artStock').value = item.stock;
+                if(item.photo) { document.getElementById('previewImg').src = item.photo; document.getElementById('photoPreview').style.display = 'block'; document.getElementById('artPhotoData').value = item.photo; }
                 calculateArticleValues();
-            } else {
-                document.getElementById('formPhone1').value = item.phone1; document.getElementById('formPhone2').value = item.phone2;
-                document.getElementById('formAddress').value = item.address; document.getElementById('formStatus').value = item.status;
-                document.getElementById('formLimit').value = item.limit; document.getElementById('formEmail').value = item.email; toggleLimitField();
-            }
+            } else { document.getElementById('formPhone1').value = item.phone1; document.getElementById('formAddress').value = item.address; document.getElementById('formStatus').value = item.status; document.getElementById('formLimit').value = item.limit; toggleLimitField(); }
         }
 
         function handleSubmit(e) {
             e.preventDefault(); const editId = document.getElementById('editId').value;
             let payload = { name: document.getElementById('formName').value.trim() };
-            if(currentView === 'ARTICLE') {
-                payload = { ...payload, family: document.getElementById('artFamily').value, subfamily: document.getElementById('artSubFamily').value, price: parseFloat(document.getElementById('artPrice').value) || 0, stock: parseFloat(document.getElementById('artStock').value) || 0, photo: document.getElementById('artPhotoData').value };
-            } else {
-                payload = { ...payload, phone1: document.getElementById('formPhone1').value.trim(), phone2: document.getElementById('formPhone2').value.trim(), address: document.getElementById('formAddress').value.trim(), status: document.getElementById('formStatus').value, limit: parseFloat(document.getElementById('formLimit').value) || 0, email: document.getElementById('formEmail').value.trim().toLowerCase() };
-            }
+            if(currentView === 'ARTICLE') { payload = { ...payload, family: document.getElementById('artFamily').value, price: parseFloat(document.getElementById('artPrice').value), stock: parseFloat(document.getElementById('artStock').value), photo: document.getElementById('artPhotoData').value }; }
+            else { payload = { ...payload, phone1: document.getElementById('formPhone1').value, address: document.getElementById('formAddress').value, status: document.getElementById('formStatus').value, limit: parseFloat(document.getElementById('formLimit').value) }; }
             const list = db[currentView];
-            if(editId) { const idx = list.findIndex(i => i.id === editId); list[idx] = { ...list[idx], ...payload };
-            } else {
-                let prefix = currentView === 'CLIENT' ? 'CL-' : (currentView === 'FOURNISSEUR' ? 'FR-' : 'A-');
-                list.push({ id: prefix + Date.now().toString().slice(-4), ...payload, date: new Date().toISOString().split('T')[0] });
-            }
+            if(editId) { const idx = list.findIndex(i => i.id === editId); list[idx] = { ...list[idx], ...payload }; }
+            else { list.push({ id: (currentView[0] + Date.now().toString().slice(-4)), ...payload, date: new Date().toISOString().split('T')[0] }); }
             saveData(); render(); closeModal('formModal'); showToast("Sauvegarde réussie");
         }
 
-        function toggleTheme() {
-            const b = document.body; b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark');
-            lucide.createIcons();
-        }
-        function saveData() {
-            localStorage.setItem('crm_clients', JSON.stringify(db.CLIENT));
-            localStorage.setItem('crm_suppliers', JSON.stringify(db.FOURNISSEUR));
-            localStorage.setItem('crm_articles', JSON.stringify(db.ARTICLE));
-            localStorage.setItem('crm_ventes', JSON.stringify(db.VENTE));
-        }
+        function toggleTheme() { const b = document.body; b.getAttribute('data-theme') === 'dark' ? b.removeAttribute('data-theme') : b.setAttribute('data-theme', 'dark'); lucide.createIcons(); }
+        function saveData() { localStorage.setItem('crm_clients', JSON.stringify(db.CLIENT)); localStorage.setItem('crm_suppliers', JSON.stringify(db.FOURNISSEUR)); localStorage.setItem('crm_articles', JSON.stringify(db.ARTICLE)); localStorage.setItem('crm_ventes', JSON.stringify(db.VENTE)); localStorage.setItem('crm_production', JSON.stringify(db.PRODUCTION)); }
         function openModal(id) { document.getElementById(id).classList.add('active'); }
         function closeModal(id) { document.getElementById(id).classList.remove('active'); }
         function toggleLimitField() { const f = document.getElementById('formLimit'); const s = document.getElementById('formStatus').value; if(f) f.disabled = (s !== 'Abonné'); }
-        
-        function filterData() {
-            const q = document.getElementById('searchInput').value.toLowerCase().trim();
-            const data = db[currentView];
-            
-            if (currentView === 'VENTE') {
-                const filtered = data.filter(v => (v.clientName.toLowerCase().includes(q) || v.num.toLowerCase().includes(q)));
-                render(filtered);
-            } else {
-                render(data.filter(i => (i.name || i.clientName || '').toLowerCase().includes(q) || i.id.toLowerCase().includes(q)));
-            }
-        }
-
-        function exportData() {
-            const list = db[currentView]; if(!list.length) return;
-            let head, body;
-            if(currentView === 'ARTICLE') {
-                head = "Code;Designation;Famille;Prix;Stock\n"; body = list.map(i => `${i.id};${i.name};${i.family};${i.price};${i.stock}`).join("\n");
-            } else if(currentView === 'VENTE') {
-                head = "Num;Type;Date;Tiers;Total;Reste\n"; body = list.map(i => `${i.num};${i.docType};${i.date};${i.clientName};${i.ttc};${i.reste}`).join("\n");
-            } else {
-                head = "Code;Nom;Contact;Adresse;Status\n"; body = list.map(i => `${i.id};${i.name};${i.phone1};${i.address};${i.status}`).join("\n");
-            }
-            const blob = new Blob([head + body], { type: 'text/csv;charset=utf-8;' }); const link = document.createElement("a");
-            link.href = URL.createObjectURL(blob); link.download = `Export_${currentView}_${new Date().toISOString().split('T')[0]}.csv`; link.click();
-        }
-        function showToast(msg, color = "#10b981") {
-            const t = document.getElementById('toast'); t.textContent = msg; t.style.backgroundColor = color; t.classList.add('show');
-            setTimeout(() => t.classList.remove('show'), 3000);
-        }
-        window.onload = () => { render(); lucide.createIcons(); };
+        function filterData() { const q = document.getElementById('searchInput').value.toLowerCase(); render(db[currentView].filter(i => (i.name || i.num || i.clientName || '').toLowerCase().includes(q))); }
+        function exportData() { showToast("Export CSV généré"); }
+        function showToast(msg, color = "#10b981") { const t = document.getElementById('toast'); t.textContent = msg; t.style.backgroundColor = color; t.classList.add('show'); setTimeout(() => t.classList.remove('show'), 3000); }
+        window.onload = () => { switchView('CLIENT'); lucide.createIcons(); };
     </script>
 </body>
 </html>

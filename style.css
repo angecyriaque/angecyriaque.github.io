@@ -1713,3 +1713,56 @@ input[type="password"] {
     border: 2px solid #ef4444 !important;
     border-color: #ef4444 !important;
 }
+
+/* Premium Cancel Button Style */
+.btn-cancel {
+    background-color: var(--bg-global) !important;
+    border: 1px solid var(--border-color) !important;
+    color: var(--text-muted) !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease-in-out;
+}
+.btn-cancel:hover {
+    background-color: rgba(236, 72, 153, 0.08) !important;
+    border-color: #ec4899 !important;
+    color: #ec4899 !important;
+    box-shadow: 0 2px 8px rgba(236, 72, 153, 0.15) !important;
+}
+
+/* Premium Dark Button Style */
+.btn-dark {
+    background-color: #111827 !important;
+    background: #111827 !important;
+    color: #ffffff !important;
+    border: 1px solid #374151 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease-in-out;
+}
+.btn-dark:hover {
+    background-color: #1f2937 !important;
+    background: #1f2937 !important;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Premium Fuchsia Button Style */
+.btn-fuchsia {
+    background: linear-gradient(135deg, #f472b6, #db2777) !important;
+    background-color: #db2777 !important;
+    color: #ffffff !important;
+    border: none !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 4px;
+    transition: all 0.2s ease-in-out;
+}
+.btn-fuchsia:hover {
+    filter: brightness(1.08) !important;
+    box-shadow: 0 4px 10px rgba(219, 39, 119, 0.25) !important;
+}

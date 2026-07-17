@@ -586,7 +586,7 @@ function render(data) {
                         </div>
                     </div>
                     <div class="card-actions" style="margin-top:12px; border-top:1px solid var(--border-color); padding-top:10px; display:flex; justify-content:flex-end;">
-                        <button class="btn btn-secondary btn-small" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding: 4px 8px;" onclick="event.stopPropagation(); editArticle('${item.id}')">
+                        <button class="btn btn-warning btn-small" style="display:flex; align-items:center; gap:4px; font-size:0.75rem; padding: 4px 8px;" onclick="event.stopPropagation(); editArticle('${item.id}')">
                             <i data-lucide="edit-2" style="width:12px; height:12px;"></i> Modifier
                         </button>
                     </div>
@@ -4214,7 +4214,7 @@ function showProductionDetails(id) {
         
         <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:1.5rem; border-top:1px solid var(--border-color); padding-top:1rem;">
             ${p.status === 'En cours' ? `
-                <button class="btn btn-info" onclick="closeModal('venteDetailsModal'); openTransferProductionModal('${p.id}')">
+                <button class="btn btn-success" onclick="closeModal('venteDetailsModal'); openTransferProductionModal('${p.id}')">
                     <i data-lucide="arrow-right-left" style="width:14px; height:14px; margin-right:4px;"></i> Transférer
                 </button>
             ` : ''}
@@ -4222,8 +4222,8 @@ function showProductionDetails(id) {
                 <button class="btn btn-secondary" onclick="closeModal('venteDetailsModal'); editProduction('${p.id}')">
                     <i data-lucide="edit" style="width:14px; height:14px; margin-right:4px;"></i> Modifier
                 </button>
-                <button class="btn btn-danger" onclick="closeModal('venteDetailsModal'); cancelProduction('${p.id}')">
-                    <i data-lucide="slash" style="width:14px; height:14px; margin-right:4px;"></i> Annuler Production
+                <button class="btn btn-fuchsia" onclick="closeModal('venteDetailsModal'); cancelProduction('${p.id}')">
+                    <i data-lucide="ban" style="width:14px; height:14px; margin-right:4px;"></i> Annuler Production
                 </button>
             ` : ''}
             <button class="btn btn-danger" onclick="deleteProduction('${p.id}')">

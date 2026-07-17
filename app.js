@@ -3764,6 +3764,9 @@ function updateTransferCalculations() {
 }
 
 function executeProductionTransfer() {
+    if (!validateContainerRequiredFields('transferProductionModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const adminCode = document.getElementById('transferAdminCode').value.toUpperCase().trim();
     const adminUser = db.USER.find(u => u.id === adminCode && u.status === 'Actif' && u.role === 'Administrateur');
     if (!adminUser) {
@@ -4680,6 +4683,9 @@ function updateFacture() {
 }
 
 function saveAndPrint() {
+    if (!validateContainerRequiredFields('saleModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const editId = document.getElementById('editVenteId').value;
     const type = document.getElementById('saleDocType').value;
     
@@ -4782,6 +4788,9 @@ function saveAndPrint() {
 }
 
 function saveAndSendVente() {
+    if (!validateContainerRequiredFields('saleModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const editId = document.getElementById('editVenteId').value;
     const type = document.getElementById('saleDocType').value;
     
@@ -5190,15 +5199,14 @@ function updatePurchase() {
 }
 
 function saveAndSendAchat() {
+    if (!validateContainerRequiredFields('achatModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const supplierId = document.getElementById('purchaseSupplierSelect').value;
     const mode = document.getElementById('purchasePaymentMode').value;
     const date = document.getElementById('purchaseDate').value;
     const type = document.getElementById('purchaseDocType').value;
     const useTVA = document.getElementById('purchaseTvaToggle').checked;
-    
-    if (!supplierId || !date) {
-        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
-    }
     
     const isQuote = type === 'DEVIS_ACHAT';
     const items = [];
@@ -5873,6 +5881,9 @@ function openConvertAchatModal(id) {
 }
 
 function executeConvertQuoteToAchat() {
+    if (!validateContainerRequiredFields('convertAchatModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const adminCode = document.getElementById('convertAchatAdminCode').value.toUpperCase().trim();
     const adminUser = db.USER.find(u => u.id === adminCode && u.status === 'Actif' && u.role === 'Administrateur');
     if (adminCode !== ADMIN_CODE && !adminUser) {
@@ -6204,6 +6215,9 @@ function openPayModal(id) {
 }
 
 function executePayment() {
+    if (!validateContainerRequiredFields('payModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const amount = Math.round(parseFloat(document.getElementById('payAmount').value)) || 0;
     const proof = document.getElementById('payProof').value.trim();
     const mode = document.getElementById('payMode').value;
@@ -6283,6 +6297,9 @@ function openDeliveryModal(id) {
 }
 
 function executeDelivery() {
+    if (!validateContainerRequiredFields('deliveryModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const id = document.getElementById('deliveryVenteId').value;
     const driver = document.getElementById('deliveryDriverSelect').value;
     const date = document.getElementById('deliveryActualDate').value;
@@ -7583,6 +7600,9 @@ function openConvertSaleModal(id) {
 }
 
 function executeConvertSaleToFacture() {
+    if (!validateContainerRequiredFields('convertSaleModal')) {
+        return showToast("Veuillez remplir tous les champs obligatoires (*)", true);
+    }
     const adminCode = document.getElementById('convertSaleAdminCode').value.toUpperCase().trim();
     // Validate admin code against db.USER
     const adminUser = db.USER.find(u => u.id === adminCode && u.status === 'Actif' && u.role === 'Administrateur');
@@ -8395,4 +8415,74 @@ function deleteTiersFromDetails(id, type) {
         showToast(deleteReferences ? "Contact et ses références supprimés avec succès" : "Contact supprimé avec succès");
     });
 }
+
+// Global Validation Helper for Required Fields
+function validateContainerRequiredFields(containerId) {
+    const container = document.getElementById(containerId);
+    if (!container) return true;
+    
+    let isValid = true;
+    const requiredInputs = container.querySelectorAll('[required]');
+    
+    requiredInputs.forEach(input => {
+        let isFieldValid = true;
+        
+        if (input.type === 'checkbox' || input.type === 'radio') {
+            isFieldValid = input.checked;
+        } else {
+            isFieldValid = input.value.trim() !== '';
+        }
+        
+        if (!isFieldValid) {
+            input.classList.add('invalid-field');
+            isValid = false;
+        } else {
+            input.classList.remove('invalid-field');
+        }
+        
+        // Add dynamic listener to clear error on input/change
+        if (!input.hasAttribute('data-validation-listener')) {
+            input.setAttribute('data-validation-listener', 'true');
+            const clearError = () => {
+                let currentValid = true;
+                if (input.type === 'checkbox' || input.type === 'radio') {
+                    currentValid = input.checked;
+                } else {
+                    currentValid = input.value.trim() !== '';
+                }
+                if (currentValid) {
+                    input.classList.remove('invalid-field');
+                } else {
+                    input.classList.add('invalid-field');
+                }
+            };
+            input.addEventListener('input', clearError);
+            input.addEventListener('change', clearError);
+        }
+    });
+    
+    return isValid;
+}
+
+// Global validation listeners for HTML5 native required fields
+if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    document.addEventListener('invalid', function(e) {
+        if (e.target && e.target.classList) {
+            e.target.classList.add('invalid-field');
+        }
+    }, true);
+
+    document.addEventListener('input', function(e) {
+        if (e.target && e.target.classList && e.target.classList.contains('invalid-field') && e.target.value.trim() !== '') {
+            e.target.classList.remove('invalid-field');
+        }
+    }, true);
+
+    document.addEventListener('change', function(e) {
+        if (e.target && e.target.classList && e.target.classList.contains('invalid-field') && e.target.value.trim() !== '') {
+            e.target.classList.remove('invalid-field');
+        }
+    }, true);
+}
+
 

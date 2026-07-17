@@ -1707,3 +1707,9 @@ input[type="password"] {
     color: #000000 !important;
     font-weight: bold !important;
 }
+
+/* Red border style for invalid required fields */
+.invalid-field {
+    border: 2px solid #ef4444 !important;
+    border-color: #ef4444 !important;
+}
